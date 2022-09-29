@@ -22,6 +22,7 @@ const {
 	REVIEWERS,
 	TEAM_REVIEWERS
 } = require('./config')
+const github = require('@actions/github')
 
 const run = async () => {
 	// Reuse octokit for each repo
@@ -109,7 +110,8 @@ const run = async () => {
 						source: file.source,
 						message: message[destExists].pr,
 						useOriginalMessage: useOriginalCommitMessage,
-						commitMessage: message[destExists].commit
+						commitMessage: message[destExists].commit,
+						originalCommitMessage: git.originalCommitMessage()
 					})
 				}
 			})
@@ -150,7 +152,8 @@ const run = async () => {
 				modified.push({
 					dest: git.workingDir,
 					useOriginalMessage: useOriginalCommitMessage,
-					commitMessage: commitMessage
+					commitMessage: commitMessage,
+					originalCommitMessage: git.originalCommitMessage()
 				})
 			}
 
@@ -164,6 +167,12 @@ const run = async () => {
 					<summary>Changed files</summary>
 					<ul>
 					${ modified.map((file) => `<li>${ file.message }</li>`).join('') }
+					</ul>
+					</details>
+					<details ${ SHOW_CHANGED_FILES_IN_PR ? 'open' : '' }>
+					<summary>Original Commit Messages</summary>
+					<ul>
+					${ github.context.payload?.commits?.map((commit) => `<li>${ commit.message }</li>`).join('') ?? "_No Original Commit Messages (PR created from manual workflow run)._" }
 					</ul>
 					</details>
 				`)

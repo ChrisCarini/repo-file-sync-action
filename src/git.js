@@ -153,7 +153,7 @@ class Git {
 	}
 
 	originalCommitMessage() {
-		return github.context.payload.commits[0].message
+		return github.context.payload?.commits?.[0]?.message ?? "No original commit message."
 	}
 
 	parseGitDiffOutput(string) { // parses git diff output and returns a dictionary mapping the file path to the diff output for this file
