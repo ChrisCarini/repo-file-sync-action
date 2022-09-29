@@ -118,6 +118,11 @@ try {
 			type: 'boolean',
 			default: false
 		}),
+		SHOW_CHANGED_FILES_IN_PR: getInput({
+			key: 'SHOW_CHANGED_FILES_IN_PR',
+			type: 'boolean',
+			default: true
+		}),
 		BRANCH_PREFIX: getInput({
 			key: 'BRANCH_PREFIX',
 			default: 'repo-sync/SOURCE_REPO_NAME'

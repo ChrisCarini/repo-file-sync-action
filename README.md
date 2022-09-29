@@ -116,6 +116,7 @@ Here are all the inputs [repo-file-sync-action](https://github.com/BetaHuhn/repo
 | `ORIGINAL_MESSAGE` | Use original commit message instead. Only works if the file(s) were changed and the action was triggered by pushing a single commit. | **No** | false |
 | `COMMIT_AS_PR_TITLE` | Use first line of the commit message as PR title. Only works if `ORIGINAL_MESSAGE` is `true` and working. | **No** | false |
 | `COMMIT_EACH_FILE` | Commit each file seperately | **No** | true |
+| `SHOW_CHANGED_FILES_IN_PR` | Automatically have the "Changed Files" section of the PR description expanded. Set to `false` to have the listing collapsed by default. | **No** | true                            |
 | `GIT_EMAIL` | The e-mail address used to commit the synced files | **Only when using installation token** | the email of the PAT used |
 | `GIT_USERNAME` | The username used to commit the synced files | **Only when using installation token** | the username of the PAT used |
 | `OVERWRITE_EXISTING_PR` | Overwrite any existing Sync PR with the new changes | **No** | true |

@@ -12,7 +12,7 @@ inputs:
       GitHub App Installation Token to used to access repos
     required: false
   CONFIG_PATH:
-    description: | 
+    description: |
       The path for the sync configuration file
     required: false
   IS_FINE_GRAINED: 
@@ -82,6 +82,10 @@ inputs:
   COMMIT_AS_PR_TITLE:
     description: |
       Re-use the commit message as PR title. Works only if ORIGINAL_MESSAGE is on and PR has one commit. Defaults to false
+    required: false
+  SHOW_CHANGED_FILES_IN_PR:
+    description: |
+      If true, will expand the 'Changed Files' section of the PR by default.
     required: false
   SKIP_PR:
     description: |

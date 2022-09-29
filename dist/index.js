@@ -29907,6 +29907,11 @@ try {
 			type: 'boolean',
 			default: false
 		}),
+		SHOW_CHANGED_FILES_IN_PR: getInput({
+			key: 'SHOW_CHANGED_FILES_IN_PR',
+			type: 'boolean',
+			default: true
+		}),
 		BRANCH_PREFIX: getInput({
 			key: 'BRANCH_PREFIX',
 			default: 'repo-sync/SOURCE_REPO_NAME'
@@ -30962,6 +30967,7 @@ const {
 	SKIP_PR,
 	ORIGINAL_MESSAGE,
 	COMMIT_AS_PR_TITLE,
+	SHOW_CHANGED_FILES_IN_PR,
 	FORK,
 	REVIEWERS,
 	TEAM_REVIEWERS
@@ -31104,7 +31110,7 @@ const run = async () => {
 			if (SKIP_PR === false) {
 				// If each file was committed separately, list them in the PR description
 				const changedFiles = dedent(`
-					<details>
+					<details ${ SHOW_CHANGED_FILES_IN_PR ? 'open' : '' }>
 					<summary>Changed files</summary>
 					<ul>
 					${ modified.map((file) => `<li>${ file.message }</li>`).join('') }
