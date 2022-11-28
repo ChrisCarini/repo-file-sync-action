@@ -30157,6 +30157,13 @@ class Git {
 				const { data } = await this.github.users.getAuthenticated()
 				email = data.email
 				username = data.login
+				// If email is *STILL* not found (as is the case for myself, with
+				// the `Keep my email addresses private` setting), then build the
+				// private no-reply GitHub user email alias to use instead.
+				if (email === undefined || email === null) {
+					email = `${ data.id }+${ data.login }@users.noreply.github.com`
+					core.debug(`Email not returned from API. Assuming private email; using: ${ email }`)
+				}
 			}
 		}
 
