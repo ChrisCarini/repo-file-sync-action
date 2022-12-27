@@ -13,17 +13,26 @@ const {
 	GIT_USERNAME,
 	GIT_EMAIL,
 	TMP_DIR,
-	COMMIT_BODY,
-	COMMIT_PREFIX,
 	GITHUB_REPOSITORY,
 	OVERWRITE_EXISTING_PR,
-	SKIP_PR,
-	PR_BODY,
 	BRANCH_PREFIX,
-	FORK
+	FORK,
 } = require('./config')
 
 const { dedent, execCmd } = require('./helpers')
+
+const GH_RUN_ID = process.env.GITHUB_RUN_ID || 0
+const PR_BEING_UPDATED_WARNING = `<div align=center>
+    <table>
+        <tr>
+            <td>
+            :warning: :warning: <i><b>Warning:</b> This PR is being updated from within workflow run 
+            <a href="https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ GH_RUN_ID }">#${ GH_RUN_ID }</a>
+            ...</i>:warning: :warning:
+            </td>
+        </tr>
+    </table>
+</div>`
 
 class Git {
 	constructor() {
@@ -61,14 +70,13 @@ class Git {
 
 		await this.clone()
 		await this.setIdentity()
-		await this.getBaseBranch()
+		this.baseBranch = await this.getBaseBranch(this.workingDir)
 		await this.getLastCommitSha()
 
 		if (FORK) {
 			const forkUrl = `https://${ GITHUB_TOKEN }@github.com/${ FORK }/${ this.repo.name }.git`
 			await this.createFork()
 			await this.createRemote(forkUrl)
-
 		}
 	}
 
@@ -122,14 +130,14 @@ class Git {
 		)
 	}
 
-	async getBaseBranch() {
-		this.baseBranch = await execCmd(
+	async getBaseBranch(workingDir) {
+		return execCmd(
 			`git rev-parse --abbrev-ref HEAD`,
-			this.workingDir
+			workingDir
 		)
 	}
 
-	async createPrBranch() {
+	async reservePrBranchName() {
 		const prefix = BRANCH_PREFIX.replace('SOURCE_REPO_NAME', GITHUB_REPOSITORY.split('/')[1])
 
 		let newBranch = path.join(prefix, this.repo.branch).replace(/\\/g, '/').replace(/\/\./g, '/')
@@ -138,14 +146,28 @@ class Git {
 			newBranch += `-${ Math.round((new Date()).getTime() / 1000) }`
 		}
 
-		core.debug(`Creating PR Branch ${ newBranch }`)
-
-		await execCmd(
-			`git checkout -b "${ newBranch }"`,
-			this.workingDir
-		)
+		core.debug(`Locally reserving PR Branch ${ newBranch }`)
 
 		this.prBranch = newBranch
+	}
+
+	async createPrBranch(existingPr) {
+		core.debug(`Creating PR Branch ${ this.prBranch }`)
+
+		let checkout_existing_branch = existingPr !== undefined
+
+		if (checkout_existing_branch) {
+			await execCmd(
+				`git remote set-branches origin "${ this.prBranch }"`,
+				this.workingDir
+			)
+			await execCmd(
+				`git fetch --depth 1 origin "${ this.prBranch }"`,
+				this.workingDir
+			)
+		}
+
+		await this.checkout(this.prBranch, this.workingDir, !checkout_existing_branch)
 	}
 
 	async add(file) {
@@ -155,50 +177,25 @@ class Git {
 		)
 	}
 
-	isOneCommitPush() {
-		return github.context.eventName === 'push' && github.context.payload.commits.length === 1
-	}
+	async getCommitShaAndMessage(ref, workingDir) {
+		const commitInfo = await execCmd(`git log -n 1 --format='%H %B' ${ ref }`, workingDir)
+		core.debug(`commitInfo for [${ ref }]: ${ commitInfo }`)
 
-	originalCommitMessage() {
-		return github.context.payload?.commits?.[0]?.message ?? "No original commit message."
-	}
-
-	parseGitDiffOutput(string) { // parses git diff output and returns a dictionary mapping the file path to the diff output for this file
-		// split diff into separate entries for separate files. \ndiff --git should be a reliable way to detect the separation, as content of files is always indented
-		return `\n${ string }`.split('\ndiff --git').slice(1).reduce((resultDict, fileDiff) => {
-			const lines = fileDiff.split('\n')
-			const lastHeaderLineIndex = lines.findIndex((line) => line.startsWith('+++'))
-			if (lastHeaderLineIndex === -1) return resultDict // ignore binary files
-
-			const plainDiff = lines.slice(lastHeaderLineIndex + 1).join('\n').trim()
-			let filePath = ''
-			if (lines[lastHeaderLineIndex].startsWith('+++ b/')) { // every file except removed files
-				filePath = lines[lastHeaderLineIndex].slice(6) // remove '+++ b/'
-			} else { // for removed file need to use header line with filename before deletion
-				filePath = lines[lastHeaderLineIndex - 1].slice(6) // remove '--- a/'
-			}
-			return { ...resultDict, [filePath]: plainDiff }
-		}, {})
-	}
-
-	async getChangesFromLastCommit(source) { // gets array of git diffs for the source, which either can be a file or a dict
-		if (this.lastCommitChanges === undefined) {
-			const diff = await this.github.repos.compareCommits({
-				mediaType: {
-					format: 'diff'
-				},
-				owner: github.context.payload.repository.owner.name,
-				repo: github.context.payload.repository.name,
-				base: github.context.payload.before,
-				head: github.context.payload.after
-			})
-			this.lastCommitChanges = this.parseGitDiffOutput(diff.data)
+		const commitSha = commitInfo.slice(0, 40) // commit SHAs are 40 chars
+		const commitMessage = commitInfo.slice(41).trim()
+		core.debug(`commitSha: 		${ commitSha }`)
+		core.debug(`commitMessage: 	${ commitMessage }`)
+		return {
+			sha: commitSha,
+			message: commitMessage,
 		}
-		if (source.endsWith('/')) {
-			return Object.keys(this.lastCommitChanges).filter((filePath) => filePath.startsWith(source)).reduce((result, key) => [ ...result, this.lastCommitChanges[key] ], [])
-		} else {
-			return this.lastCommitChanges[source] === undefined ? [] : [ this.lastCommitChanges[source] ]
-		}
+	}
+
+	async checkout(ref, workingDir, newBranch = false) {
+		return execCmd(
+			`git checkout ${ newBranch ? '-b ' : '' }"${ ref }"`,
+			workingDir
+		)
 	}
 
 	async getBlobBase64Content(file) {
@@ -215,14 +212,6 @@ class Git {
 		)
 	}
 
-	async changes(destination) { // gets array of git diffs for the destination, which either can be a file or a dict
-		const output = await execCmd(
-			`git diff HEAD ${ destination }`,
-			this.workingDir
-		)
-		return Object.values(this.parseGitDiffOutput(output))
-	}
-
 	async hasChanges() {
 		const statusOutput = await execCmd(
 			`git status --porcelain`,
@@ -232,11 +221,7 @@ class Git {
 		return parse(statusOutput).length !== 0
 	}
 
-	async commit(msg) {
-		let message = msg !== undefined ? msg : `${ COMMIT_PREFIX } Synced file(s) with ${ GITHUB_REPOSITORY }`
-		if (COMMIT_BODY) {
-			message += `\n\n${ COMMIT_BODY }`
-		}
+	async commit(message) {
 		return execCmd(
 			`git commit -m '${ message.replace(/'/g, '\'\\\'\'') }'`,
 			this.workingDir
@@ -299,16 +284,14 @@ class Git {
 	// Gets the commit list in chronological order
 	async getCommitsToPush() {
 		const output = await execCmd(
-			`git log --format=%H --reverse ${ SKIP_PR === false ? `` : `origin/` }${ this.baseBranch }..HEAD`,
+			`git log --format=%H --reverse ${ this.baseBranch }..HEAD`,
 			this.workingDir
 		)
-
-		const commits = output.split('\n')
-		return commits
+		return output.split('\n')
 	}
 
 	async getCommitMessage(commitSha) {
-		return await execCmd(
+		return execCmd(
 			`git log -1 --format=%B ${ commitSha }`,
 			this.workingDir
 		)
@@ -334,43 +317,34 @@ class Git {
 	async createGithubVerifiedCommits() {
 		const commitsData = await this.getCommitsDataToPush()
 
-		if (SKIP_PR === false) {
-			// Creates the PR branch if doesn't exists
-			try {
-				await this.github.git.createRef({
-					owner: this.repo.user,
-					repo: this.repo.name,
-					sha: this.lastCommitSha,
-					ref: 'refs/heads/' + this.prBranch
-				})
+		// Creates the PR branch if doesn't exists
+		try {
+			await this.github.git.createRef({
+				owner: this.repo.user,
+				repo: this.repo.name,
+				sha: this.lastCommitSha,
+				ref: 'refs/heads/' + this.prBranch
+			})
 
-				core.debug(`Created new branch ${ this.prBranch }`)
-			} catch (error) {
-				// If the branch exists ignores the error
-				if (error.message !== 'Reference already exists') throw error
-			}
+			core.debug(`Created new branch ${ this.prBranch }`)
+		} catch (error) {
+			// If the branch exists ignores the error
+			if (error.message !== 'Reference already exists') throw error
 		}
 
 		for (const commitData of commitsData) {
 			await this.createGithubTreeAndCommit(commitData.tree, commitData.commitMessage)
 		}
 
-		core.debug(`Updating branch ${ SKIP_PR === false ? this.prBranch : this.baseBranch } ref`)
+		core.debug(`Updating branch ${ this.prBranch } ref`)
 		await this.github.git.updateRef({
 			owner: this.repo.user,
 			repo: this.repo.name,
-			ref: `heads/${ SKIP_PR === false ? this.prBranch : this.baseBranch }`,
+			ref: `heads/${ this.prBranch }`,
 			sha: this.lastCommitSha,
 			force: true
 		})
 		core.debug(`Commit using GitHub API completed`)
-	}
-
-	async status() {
-		return execCmd(
-			`git status`,
-			this.workingDir
-		)
 	}
 
 	async push() {
@@ -389,6 +363,14 @@ class Git {
 		)
 	}
 
+	async deepenCheckout(depth, workingDir) {
+		let output = await execCmd(
+			`git fetch --deepen=${ depth }`,
+			workingDir,
+		)
+		core.debug(output)
+	}
+
 	async findExistingPr() {
 		const { data } = await this.github.pulls.list({
 			owner: this.repo.user,
@@ -399,16 +381,33 @@ class Git {
 
 		this.existingPr = data[0]
 
+		if (this.existingPr) {
+			core.info(`Found existing PR ${ this.existingPr.number }; fetching commits...`)
+			this.existingPr.commits = (await this.github.pulls.listCommits({
+				owner: this.repo.user,
+				repo: this.repo.name,
+				pull_number: this.existingPr.number
+			})).data
+		}
+
+		core.startGroup('CURRENT PR INFO:')
+		core.debug(JSON.stringify(this.existingPr, null, 2))
+		core.endGroup()
+
 		return this.existingPr
 	}
 
 	async setPrWarning() {
+		if (this.existingPr === undefined) {
+			return
+		}
+		core.debug(`Setting PR warning banner on ${ this.repo.user }/${ this.repo.name } PR#${ this.existingPr.number }`)
 		await this.github.pulls.update({
 			owner: this.repo.user,
 			repo: this.repo.name,
 			pull_number: this.existingPr.number,
 			body: dedent(`
-				⚠️ This PR is being automatically resynced ⚠️
+				${ PR_BEING_UPDATED_WARNING }
 
 				${ this.existingPr.body }
 			`)
@@ -416,25 +415,32 @@ class Git {
 	}
 
 	async removePrWarning() {
+		if (this.existingPr === undefined) {
+			return
+		}
+		core.debug(`Removing PR warning banner on ${ this.repo.user }/${ this.repo.name } PR#${ this.existingPr.number }`)
 		await this.github.pulls.update({
 			owner: this.repo.user,
 			repo: this.repo.name,
 			pull_number: this.existingPr.number,
-			body: this.existingPr.body.replace('⚠️ This PR is being automatically resynced ⚠️', '')
+			body: this.existingPr.body.replace(PR_BEING_UPDATED_WARNING, '')
 		})
 	}
 
-	async createOrUpdatePr(changedFiles, title) {
+	async createOrUpdatePr(title, contents) {
+		const srcRepoBeforeRef = this.getSrcRepoBeforeRef()
+		core.debug(`srcRepoBeforeRef: ${ srcRepoBeforeRef }`)
+
 		const body = dedent(`
 			Synced local file(s) with [${ GITHUB_REPOSITORY }](https://github.com/${ GITHUB_REPOSITORY }).
 
-			${ PR_BODY }
-
-			${ changedFiles }
+			${ contents }
+			
+			<!-- srcRepoBeforeRef::${ srcRepoBeforeRef } -->
 
 			---
 
-			This PR was created automatically by the [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) workflow run [#${ process.env.GITHUB_RUN_ID || 0 }](https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ process.env.GITHUB_RUN_ID || 0 })
+			This PR was ${ this.existingPr ? 'updated' : 'created' } automatically by the [ChrisCarini/repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) workflow run [#${ process.env.GITHUB_RUN_ID || 0 }](https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ process.env.GITHUB_RUN_ID || 0 })
 		`)
 
 		if (this.existingPr) {
@@ -443,28 +449,39 @@ class Git {
 			const { data } = await this.github.pulls.update({
 				owner: this.repo.user,
 				repo: this.repo.name,
-				title: `${ COMMIT_PREFIX } Synced file(s) with ${ GITHUB_REPOSITORY }`,
+				title: title,
 				pull_number: this.existingPr.number,
-				body: body
+				body: body,
 			})
 
 			return data
 		}
 
 		core.info(`Creating new PR`)
-
+		core.debug(`owner: ${ this.repo.user }`)
+		core.debug(`repo:  ${ this.repo.name }`)
+		core.debug(`title: ${ title }`)
+		core.debug(`body:  ${ body }`)
+		core.debug(`head:  ${ FORK ? FORK : this.repo.user }:${ this.prBranch }`)
+		core.debug(`base:  ${ this.baseBranch }`)
 		const { data } = await this.github.pulls.create({
 			owner: this.repo.user,
 			repo: this.repo.name,
-			title: title === undefined ? `${ COMMIT_PREFIX } Synced file(s) with ${ GITHUB_REPOSITORY }` : title,
+			title: title,
 			body: body,
 			head: `${ FORK ? FORK : this.repo.user }:${ this.prBranch }`,
-			base: this.baseBranch
+			base: this.baseBranch,
 		})
 
 		this.existingPr = data
 
 		return data
+	}
+
+	getSrcRepoBeforeRef() {
+		return this.existingPr !== undefined ?
+			this.existingPr.body.match(/<!-- srcRepoBeforeRef::(.*) -->/)?.[1] :
+			github.context.payload.before
 	}
 
 	async addPrLabels(labels) {

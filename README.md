@@ -1,8 +1,8 @@
 <div align="center">
-  
+
 # Repo File Sync Action
 
-[![Build CI](https://github.com/BetaHuhn/repo-file-sync-action/workflows/Test%20CI/badge.svg)](https://github.com/BetaHuhn/repo-file-sync-action/actions?query=workflow%3A%22Test+CI%22) [![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/BetaHuhn/repo-file-sync-action/blob/master/LICENSE) ![David](https://img.shields.io/david/betahuhn/repo-file-sync-action)
+[![Build CI](https://github.com/ChrisCarini/repo-file-sync-action/workflows/Test%20CI/badge.svg)](https://github.com/ChrisCarini/repo-file-sync-action/actions?query=workflow%3A%22Test+CI%22) [![GitHub](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/ChrisCarini/repo-file-sync-action/blob/master/LICENSE) ![David](https://img.shields.io/david/ChrisCarini/repo-file-sync-action)
 
 Keep files like Action workflows or entire directories in sync between multiple repositories.
 
@@ -10,7 +10,7 @@ Keep files like Action workflows or entire directories in sync between multiple 
 
 ## 👋 Introduction
 
-With [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) you can sync files, like workflow `.yml` files, configuration files or whole directories between repositories or branches. It works by running a GitHub Action in your main repository everytime you push something to that repo. The action will use a `sync.yml` config file to figure out which files it should sync where. If it finds a file which is out of sync it will open a pull request in the target repository with the changes.
+With [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) you can sync files, like workflow `.yml` files, configuration files or whole directories between repositories or branches. It works by running a GitHub Action in your main repository everytime you push something to that repo. The action will use a `sync.yml` config file to figure out which files it should sync where. If it finds a file which is out of sync it will open a pull request in the target repository with the changes.
 
 ## 🚀 Features
 
@@ -23,7 +23,6 @@ With [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) 
 - Render [Jinja](https://jinja.palletsprojects.com/)-style templates as use variables thanks to [Nunjucks](https://mozilla.github.io/nunjucks/)
 
 ## 📚 Usage
-
 
 ### Workflow
 
@@ -45,7 +44,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@master
       - name: Run GitHub File Sync
-        uses: BetaHuhn/repo-file-sync-action@v1
+        uses: ChrisCarini/repo-file-sync-action@v1
         with:
           GH_PAT: ${{ secrets.GH_PAT }}
 ```
@@ -86,46 +85,37 @@ More info on how to specify what files to sync where [below](#%EF%B8%8F-sync-con
 To always use the latest version of the action add the `latest` tag to the action name like this:
 
 ```yml
-uses: BetaHuhn/repo-file-sync-action@latest
+uses: ChrisCarini/repo-file-sync-action@latest
 ```
 
 If you want to make sure that your workflow doesn't suddenly break when a new major version is released, use the `v1` tag instead (recommended usage):
 
 ```yml
-uses: BetaHuhn/repo-file-sync-action@v1
+uses: ChrisCarini/repo-file-sync-action@v1
 ```
 
 With the `v1` tag you will always get the latest non-breaking version which will include potential bug fixes in the future. If you use a specific version, make sure to regularly check if a new version is available, or enable Dependabot.
 
 ## ⚙️ Action Inputs
 
-Here are all the inputs [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) takes:
+Here are all the inputs [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) takes:
 
-| Key | Value | Required | Default |
-| ------------- | ------------- | ------------- | ------------- |
-| `GH_PAT` | Your [Personal Access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token) | **`GH_PAT` or `GH_INSTALLATION_TOKEN` required** | N/A |
-| `GH_INSTALLATION_TOKEN` | Token from a GitHub App installation | **`GH_PAT` or `GH_INSTALLATION_TOKEN` required** | N/A |
-| `CONFIG_PATH` | Path to the sync configuration file | **No** | .github/sync.yml |
-| `PR_LABELS` | Labels which will be added to the pull request. Set to false to turn off | **No** | sync |
-| `ASSIGNEES` | Users to assign to the pull request | **No** | N/A |
-| `REVIEWERS` | Users to request a review of the pull request from | **No** | N/A |
-| `TEAM_REVIEWERS` | Teams to request a review of the pull request from | **No** | N/A |
-| `COMMIT_PREFIX` | Prefix for commit message and pull request title | **No** | 🔄 |
-| `COMMIT_BODY` | Commit message body. Will be appended to commit message, separated by two line returns. | **No** | '' |
-| `PR_BODY` | Additional content to add in the PR description. | **No** | '' |
-| `ORIGINAL_MESSAGE` | Use original commit message instead. Only works if the file(s) were changed and the action was triggered by pushing a single commit. | **No** | false |
-| `COMMIT_AS_PR_TITLE` | Use first line of the commit message as PR title. Only works if `ORIGINAL_MESSAGE` is `true` and working. | **No** | false |
-| `COMMIT_EACH_FILE` | Commit each file seperately | **No** | true |
-| `SHOW_CHANGED_FILES_IN_PR` | Automatically have the "Changed Files" section of the PR description expanded. Set to `false` to have the listing collapsed by default. | **No** | true                            |
-| `GIT_EMAIL` | The e-mail address used to commit the synced files | **Only when using installation token** | the email of the PAT used |
-| `GIT_USERNAME` | The username used to commit the synced files | **Only when using installation token** | the username of the PAT used |
-| `OVERWRITE_EXISTING_PR` | Overwrite any existing Sync PR with the new changes | **No** | true |
-| `BRANCH_PREFIX` | Specify a different prefix for the new branch in the target repo | **No** | repo-sync/SOURCE_REPO_NAME |
-| `TMP_DIR` | The working directory where all git operations will be done | **No** | tmp-${ Date.now().toString() } |
-| `DRY_RUN` | Run everything except that nothing will be pushed | **No** | false |
-| `SKIP_CLEANUP` | Skips removing the temporary directory. Useful for debugging | **No** | false |
-| `SKIP_PR` | Skips creating a Pull Request and pushes directly to the default branch | **No** | false |
-| `FORK` | A Github account username. Changes will be pushed to a fork of target repos on this account. | **No** | false |
+| Key                     | Value                                                                                                                                | Required                                         | Default                        |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------|--------------------------------|
+| `GH_PAT`                | Your [Personal Access token]                                                                                                         | **`GH_PAT` or `GH_INSTALLATION_TOKEN` required** | N/A                            |
+| `GH_INSTALLATION_TOKEN` | Token from a GitHub App installation                                                                                                 | **`GH_PAT` or `GH_INSTALLATION_TOKEN` required** | N/A                            |
+| `CONFIG_PATH`           | Path to the sync configuration file                                                                                                  | **No**                                           | .github/sync.yml               |
+| `PR_LABELS`             | Labels which will be added to the pull request. Set to false to turn off                                                             | **No**                                           | sync                           |
+| `ASSIGNEES`             | Users to assign to the pull request                                                                                                  | **No**                                           | N/A                            |
+| `REVIEWERS`             | Users to request a review of the pull request from                                                                                   | **No**                                           | N/A                            |
+| `TEAM_REVIEWERS`        | Teams to request a review of the pull request from                                                                                   | **No**                                           | N/A                            |
+| `GIT_EMAIL`             | The e-mail address used to commit the synced files                                                                                   | **Only when using installation token**           | the email of the PAT used      |
+| `GIT_USERNAME`          | The username used to commit the synced files                                                                                         | **Only when using installation token**           | the username of the PAT used   |
+| `BRANCH_PREFIX`         | Specify a different prefix for the new branch in the target repo                                                                     | **No**                                           | repo-sync/SOURCE_REPO_NAME     |
+| `TMP_DIR`               | The working directory where all git operations will be done                                                                          | **No**                                           | tmp-${ Date.now().toString() } |
+| `FORK`                  | A Github account username. Changes will be pushed to a fork of target repos on this account.                                         | **No**                                           | false                          |
+
+[Personal Access token]: https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token
 
 ### Outputs
 
@@ -133,7 +123,7 @@ The action sets the `pull_request_urls` output to the URLs of any created Pull R
 
 ## 🛠️ Sync Configuration
 
-In order to tell [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) what files to sync where, you have to create a `sync.yml` file in the `.github` directory of your main repository (see [action-inputs](#%EF%B8%8F-action-inputs) on how to change the location).
+In order to tell [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) what files to sync where, you have to create a `sync.yml` file in the `.github` directory of your main repository (see [action-inputs](#%EF%B8%8F-action-inputs) on how to change the location).
 
 The top-level key should be used to specify the target repository in the format `username`/`repository-name`@`branch`, after that you can list all the files you want to sync to that individual repository:
 
@@ -216,7 +206,7 @@ user/repo:
     template:
       user:
         name: 'Maxi'
-        handle: '@BetaHuhn'
+        handle: '@ChrisCarini'
 ```
 
 In the source file you can then use these variables like this:
@@ -232,7 +222,7 @@ Result:
 ```yml
 # README.md
 
-Created by Maxi (@BetaHuhn)
+Created by Maxi (@ChrisCarini)
 ```
 
 You can also use `extends` with a relative path to inherit other templates. Take a look at Nunjucks [template syntax](https://mozilla.github.io/nunjucks/templating.html) for more info.
@@ -245,11 +235,11 @@ user/repo:
 
 ```yml
 # child.yml
-{% extends './parent.yml' %}
+{ % extends './parent.yml' % }
 
-{% block some_block %}
-This is some content
-{% endblock %}
+  { % block some_block % }
+  This is some content
+  { % endblock % }
 ```
 
 ### Delete orphaned files
@@ -274,7 +264,7 @@ group:
   repos: |
     user/repo
     user/repo1
-  files: 
+  files:
     - source: workflows/build.yml
       dest: .github/workflows/build.yml
     - source: LICENSE.md
@@ -296,7 +286,7 @@ group:
       user/repo2
 
   # second group
-  - files: 
+  - files:
       - source: configs/dependabot.yml
         dest: .github/dependabot.yml
     repos: |
@@ -353,13 +343,13 @@ group:
 
 ### Custom labels
 
-By default [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) will add the `sync` label to every PR it creates. You can turn this off by setting `PR_LABELS` to false, or specify your own labels:
+By default [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) will add the `sync` label to every PR it creates. You can turn this off by setting `PR_LABELS` to false, or specify your own labels:
 
 **.github/workflows/sync.yml**
 
 ```yml
 - name: Run GitHub File Sync
-  uses: BetaHuhn/repo-file-sync-action@v1
+  uses: ChrisCarini/repo-file-sync-action@v1
   with:
     GH_PAT: ${{ secrets.GH_PAT }}
     PR_LABELS: |
@@ -369,32 +359,32 @@ By default [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-ac
 
 ### Assign a user to the PR
 
-You can tell [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) to assign users to the PR with `ASSIGNEES`:
+You can tell [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) to assign users to the PR with `ASSIGNEES`:
 
 **.github/workflows/sync.yml**
 
 ```yml
 - name: Run GitHub File Sync
-  uses: BetaHuhn/repo-file-sync-action@v1
+  uses: ChrisCarini/repo-file-sync-action@v1
   with:
     GH_PAT: ${{ secrets.GH_PAT }}
-    ASSIGNEES: BetaHuhn
+    ASSIGNEES: ChrisCarini
 ```
 
 ### Request a PR review
 
-You can tell [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) to request a review of the PR from users with `REVIEWERS` and from teams with `TEAM_REVIEWERS`:
+You can tell [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) to request a review of the PR from users with `REVIEWERS` and from teams with `TEAM_REVIEWERS`:
 
 **.github/workflows/sync.yml**
 
 ```yml
 - name: Run GitHub File Sync
-  uses: BetaHuhn/repo-file-sync-action@v1
+  uses: ChrisCarini/repo-file-sync-action@v1
   with:
     GH_PAT: ${{ secrets.GH_PAT }}
     REVIEWERS: |
-      BetaHuhn
-      BetaHuhnBot
+      ChrisCarini
+      ChrisCariniBot
     TEAM_REVIEWERS: engineering
 ```
 
@@ -429,10 +419,10 @@ If your repo name contains invalid characters, like a dot ([#32](https://github.
 **.github/workflows/sync.yml**
 
 ```yml
-uses: BetaHuhn/repo-file-sync-action@v1
+uses: ChrisCarini/repo-file-sync-action@v1
 with:
-    GH_PAT: ${{ secrets.GH_PAT }}
-    BRANCH_PREFIX: custom-branch
+  GH_PAT: ${{ secrets.GH_PAT }}
+  BRANCH_PREFIX: custom-branch
 ```
 
 The new branch will then be `custom-branch/SOURCE_BRANCH_NAME`.
@@ -447,13 +437,14 @@ You can specify a custom commit body. This will be appended to the commit messag
 
 ```yml
 - name: Run GitHub File Sync
-  uses: BetaHuhn/repo-file-sync-action@v1
+  uses: ChrisCarini/repo-file-sync-action@v1
   with:
     GH_PAT: ${{ secrets.GH_PAT }}
     COMMIT_BODY: "Change-type: patch"
 ```
 
 The above example would result in a commit message that looks something like this:
+
 ```
 🔄 Synced local '<filename>' with remote '<filename>'
 
@@ -468,7 +459,7 @@ You can add more content to the PR body with the `PR_BODY` option. For example:
 
 ```yml
 - name: Run GitHub File Sync
-  uses: BetaHuhn/repo-file-sync-action@v1
+  uses: ChrisCarini/repo-file-sync-action@v1
   with:
     GH_PAT: ${{ secrets.GH_PAT }}
     PR_BODY: This is your custom PR Body
@@ -490,22 +481,22 @@ This PR was created automatically by the repo-file-sync-action workflow run xxx.
 
 ### Fork and pull request workflow
 
-If you do not wish to grant this action write access to target repositories, you can specify a bot/user Github acccount that you do have access to with the `FORK` parameter. 
+If you do not wish to grant this action write access to target repositories, you can specify a bot/user Github acccount that you do have access to with the `FORK` parameter.
 
 A fork of each target repository will be created on this account, and all changes will be pushed to a branch on the fork, instead of upstream. Pull requests will be opened from the forks to target repositories.
 
 Note: while you can open pull requests to target repositories without write access, some features, like applying labels, are not possible.
 
 ```yml
-uses: BetaHuhn/repo-file-sync-action@v1
+uses: ChrisCarini/repo-file-sync-action@v1
 with:
-    GH_PAT: ${{ secrets.GH_PAT }}
-    FORK: file-sync-bot
+  GH_PAT: ${{ secrets.GH_PAT }}
+  FORK: file-sync-bot
 ```
 
 ### Advanced sync config
 
-Here's how I keep common files in sync across my repositories. The main repository [`github-files`](https://github.com/BetaHuhn/github-files) contains all the files I want to sync and the [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) Action which runs on every push.
+Here's how I keep common files in sync across my repositories. The main repository [`github-files`](https://github.com/BetaHuhn/github-files) contains all the files I want to sync and the [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) Action which runs on every push.
 
 Using groups I can specify which file(s) should be synced to which repositories:
 
@@ -606,15 +597,11 @@ The actual source code of this library is in the `src` folder.
 
 - run `yarn lint` or `npm run lint` to run eslint.
 - run `yarn start` or `npm run start` to run the Action locally.
-- run `yarn build` or `npm run build` to produce a production version of [repo-file-sync-action](https://github.com/BetaHuhn/repo-file-sync-action) in the `dist` folder.
+- run `yarn build` or `npm run build` to produce a production version of [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) in the `dist` folder.
 
 ## ❔ About
 
-This project was developed by me ([@betahuhn](https://github.com/BetaHuhn)) in my free time. If you want to support me:
-
-[![Donate via PayPal](https://img.shields.io/badge/paypal-donate-009cde.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=394RTSBEEEFEE)
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F81S2RK)
+This project was originally developed by [@betahuhn](https://github.com/BetaHuhn), and heavily modified by [@ChrisCarini](https://github.com/ChrisCarini) in my free time. 
 
 ### Credits
 
@@ -625,6 +612,6 @@ This Action was inspired by:
 
 ## 📄 License
 
-Copyright 2021 Maximilian Schiller
+Copyright 2023 @ChrisCarini
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

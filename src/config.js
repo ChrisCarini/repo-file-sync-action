@@ -30,43 +30,28 @@ try {
 
 	context = {
 		GITHUB_TOKEN: token,
+		GITHUB_REPOSITORY: getInput({
+			key: 'GITHUB_REPOSITORY',
+			required: true
+		}),
+		BRANCH_PREFIX: getInput({
+			key: 'BRANCH_PREFIX',
+			default: 'repo-sync/SOURCE_REPO_NAME'
+		}),
 		IS_INSTALLATION_TOKEN: isInstallationToken,
-		GIT_EMAIL: getInput({
-			key: 'GIT_EMAIL'
-		}),
-		GIT_USERNAME: getInput({
-			key: 'GIT_USERNAME'
-		}),
-		CONFIG_PATH: getInput({
-			key: 'CONFIG_PATH',
-			default: '.github/sync.yml'
-		}),
 		IS_FINE_GRAINED: getInput({
 			key: 'IS_FINE_GRAINED',
 			default: false
 		}),
-		COMMIT_BODY: getInput({
-			key: 'COMMIT_BODY',
-			default: ''
-		}),
-		COMMIT_PREFIX: getInput({
-			key: 'COMMIT_PREFIX',
-			default: '🔄'
-		}),
-		COMMIT_EACH_FILE: getInput({
-			key: 'COMMIT_EACH_FILE',
-			type: 'boolean',
-			default: true
+		CONFIG_PATH: getInput({
+			key: 'CONFIG_PATH',
+			default: '.github/sync.yml'
 		}),
 		PR_LABELS: getInput({
 			key: 'PR_LABELS',
 			default: [ 'sync' ],
 			type: 'array',
 			disableable: true
-		}),
-		PR_BODY: getInput({
-			key: 'PR_BODY',
-			default: ''
 		}),
 		ASSIGNEES: getInput({
 			key: 'ASSIGNEES',
@@ -80,58 +65,21 @@ try {
 			key: 'TEAM_REVIEWERS',
 			type: 'array'
 		}),
+		GIT_EMAIL: getInput({
+			key: 'GIT_EMAIL'
+		}),
+		GIT_USERNAME: getInput({
+			key: 'GIT_USERNAME'
+		}),
 		TMP_DIR: getInput({
 			key: 'TMP_DIR',
 			default: `tmp-${ Date.now().toString() }`
-		}),
-		DRY_RUN: getInput({
-			key: 'DRY_RUN',
-			type: 'boolean',
-			default: false
-		}),
-		SKIP_CLEANUP: getInput({
-			key: 'SKIP_CLEANUP',
-			type: 'boolean',
-			default: false
-		}),
-		OVERWRITE_EXISTING_PR: getInput({
-			key: 'OVERWRITE_EXISTING_PR',
-			type: 'boolean',
-			default: true
-		}),
-		GITHUB_REPOSITORY: getInput({
-			key: 'GITHUB_REPOSITORY',
-			required: true
-		}),
-		SKIP_PR: getInput({
-			key: 'SKIP_PR',
-			type: 'boolean',
-			default: false
-		}),
-		ORIGINAL_MESSAGE: getInput({
-			key: 'ORIGINAL_MESSAGE',
-			type: 'boolean',
-			default: false
-		}),
-		COMMIT_AS_PR_TITLE: getInput({
-			key: 'COMMIT_AS_PR_TITLE',
-			type: 'boolean',
-			default: false
-		}),
-		SHOW_CHANGED_FILES_IN_PR: getInput({
-			key: 'SHOW_CHANGED_FILES_IN_PR',
-			type: 'boolean',
-			default: true
-		}),
-		BRANCH_PREFIX: getInput({
-			key: 'BRANCH_PREFIX',
-			default: 'repo-sync/SOURCE_REPO_NAME'
 		}),
 		FORK: getInput({
 			key: 'FORK',
 			default: false,
 			disableable: true
-		})
+		}),
 	}
 
 	core.setSecret(context.GITHUB_TOKEN)
