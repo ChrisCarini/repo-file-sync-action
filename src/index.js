@@ -2,8 +2,7 @@ const core = require('@actions/core')
 const fs = require('fs')
 
 const Git = require('./git')
-const { forEach, dedent, addTrailingSlash, pathIsDirectory, copy, remove, arrayEquals, execCmd } = require('./helpers')
-
+const { forEach, addTrailingSlash, pathIsDirectory, copy, remove, execCmd } = require('./helpers')
 const {
 	parseConfig,
 	PR_LABELS,
@@ -181,26 +180,7 @@ async function run() {
 				github.context.payload.commits.forEach((commit) => commitMessages.push(commit.message))
 			}
 
-			// Build the PR title from commit message(s) and list the commit messages in the PR description.
-			const title = commitMessages.map((message) => message.split('\n')[0]).join('; ')
-
-			let originalCommitMessages = commitMessages.map((message) => {
-				const multiline = message.split('\n')
-				if (multiline.length > 1) {
-					return `<li><details><summary>${ multiline[0] }</summary>${ multiline.slice(1).join('\n') }</details></li>`
-				}
-				return `<li>${ message }</li>`
-			}).join('') ?? '_No Source Repo Commit Messages (PR created from manual workflow run)._'
-
-			const contents = dedent(`
-				<details open>
-				<summary>Source Repo Commit Messages</summary>
-				<ul>
-				${ originalCommitMessages }
-				</ul>
-				</details>
-			`)
-			const pullRequest = await git.createOrUpdatePr(title, contents)
+			const pullRequest = await git.createOrUpdatePr(commitMessages)
 
 			if (PR_LABELS !== undefined && PR_LABELS.length > 0 && !FORK) {
 				core.info(`Adding label(s) "${ PR_LABELS.join(', ') }" to PR`)

@@ -8714,6 +8714,46 @@ function removeHook(state, name, method) {
 
 /***/ }),
 
+/***/ 3159:
+/***/ ((module) => {
+
+module.exports = function dedent(templateStrings) {
+    var values = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        values[_i - 1] = arguments[_i];
+    }
+    var matches = [];
+    var strings = typeof templateStrings === 'string' ? [templateStrings] : templateStrings.slice();
+    // 1. Remove trailing whitespace.
+    strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, '');
+    // 2. Find all line breaks to determine the highest common indentation level.
+    for (var i = 0; i < strings.length; i++) {
+        var match = void 0;
+        if (match = strings[i].match(/\n[\t ]+/g)) {
+            matches.push.apply(matches, match);
+        }
+    }
+    // 3. Remove the common indentation from all strings.
+    if (matches.length) {
+        var size = Math.min.apply(Math, matches.map(function (value) { return value.length - 1; }));
+        var pattern = new RegExp("\n[\t ]{" + size + "}", 'g');
+        for (var i = 0; i < strings.length; i++) {
+            strings[i] = strings[i].replace(pattern, '\n');
+        }
+    }
+    // 4. Remove leading whitespace.
+    strings[0] = strings[0].replace(/^\r?\n/, '');
+    // 5. Perform interpolation.
+    var string = strings[0];
+    for (var i = 0; i < values.length; i++) {
+        string += values[i] + strings[i + 1];
+    }
+    return string;
+};
+//# sourceMappingURL=index.js.map
+
+/***/ }),
+
 /***/ 8932:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -30006,6 +30046,7 @@ const { GitHub, getOctokitOptions } = __nccwpck_require__(3030)
 const { throttling } = __nccwpck_require__(9968)
 const path = __nccwpck_require__(1017)
 const fs = __nccwpck_require__(7147)
+const dedent = __nccwpck_require__(3159)
 
 const {
 	GITHUB_TOKEN,
@@ -30020,7 +30061,7 @@ const {
 	FORK,
 } = __nccwpck_require__(4570)
 
-const { dedent, execCmd } = __nccwpck_require__(8505)
+const { execCmd } = __nccwpck_require__(8505)
 
 const GH_RUN_ID = process.env.GITHUB_RUN_ID || 0
 const PR_BEING_UPDATED_WARNING = `<div align=center>
@@ -30428,21 +30469,50 @@ class Git {
 		})
 	}
 
-	async createOrUpdatePr(title, contents) {
+	async createOrUpdatePr(commitMessages) {
 		const srcRepoBeforeRef = this.getSrcRepoBeforeRef()
 		core.debug(`srcRepoBeforeRef: ${ srcRepoBeforeRef }`)
 
-		const body = dedent(`
-			Synced local file(s) with [${ GITHUB_REPOSITORY }](https://github.com/${ GITHUB_REPOSITORY }).
+		// Build the PR title from commit message(s) and list the commit messages in the PR description.
+		const title = commitMessages.map((message) => message.split('\n')[0]).join('; ')
 
-			${ contents }
-			
-			<!-- srcRepoBeforeRef::${ srcRepoBeforeRef } -->
+		let originalCommitMessages = commitMessages.map((message) => {
+			const multiline = message.split('\n')
+			if (multiline.length > 1) {
+				// We build the return value this way to ensure that none of the lines are indented.
+				// Tried using `dedent` methods, however the way we were building the strings needed
+				// to deal with parsing a multiline commit message that may have different indent
+				// levels that were desired to be preserved. This works, it's not pretty, but works.
+				return [
+					'<li>',
+					'<details>',
+					`<summary>${ multiline[0] }</summary>`,
+					...multiline.slice(1),
+					'</details>',
+					'</li>',
+				].join('\n')
+			}
+			return `<li>${ message }</li>`
+		}).join('') ?? '_No Source Repo Commit Messages (PR created from manual workflow run)._'
 
-			---
-
-			This PR was ${ this.existingPr ? 'updated' : 'created' } automatically by the [ChrisCarini/repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) workflow run [#${ process.env.GITHUB_RUN_ID || 0 }](https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ process.env.GITHUB_RUN_ID || 0 })
-		`)
+		// We build the body this way to ensure that none of the lines are indented.
+		// Tried using `dedent` methods, however we found that sometimes there would
+		// still be unnecessary indentation for the first few elements (our 'text'
+		// and <details> tags). By building the string this way, we ensure that there
+		// is no whitespace before any of the lines we are introducing.
+		// This works, it's not pretty, but works.
+		const body = [
+			`Synced local file(s) with [${ GITHUB_REPOSITORY }](https://github.com/${ GITHUB_REPOSITORY }).`,
+			'<details open>',
+			'<summary>Source Repo Commit Messages</summary>',
+			'<ul>',
+			originalCommitMessages,
+			'</ul>',
+			'</details>',
+			`<!-- srcRepoBeforeRef::${ srcRepoBeforeRef } -->`,
+			'\n---\n', // horizontal line
+			`This PR was ${ this.existingPr ? 'updated' : 'created' } automatically by the [ChrisCarini/repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) workflow run [#${ process.env.GITHUB_RUN_ID || 0 }](https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ process.env.GITHUB_RUN_ID || 0 })`,
+		].join('\n')
 
 		if (this.existingPr) {
 			core.info(`Overwriting existing PR`)
@@ -30572,33 +30642,6 @@ const forEach = async (array, callback) => {
 	}
 }
 
-// From https://github.com/MartinKolarik/dedent-js/blob/master/src/index.ts - MIT © 2015 Martin Kolárik
-const dedent = function(templateStrings, ...values) {
-	const matches = []
-	const strings = typeof templateStrings === 'string' ? [ templateStrings ] : templateStrings.slice()
-	strings[strings.length - 1] = strings[strings.length - 1].replace(/\r?\n([\t ]*)$/, '')
-	for (let i = 0; i < strings.length; i++) {
-		let match
-		// eslint-disable-next-line no-cond-assign
-		if (match = strings[i].match(/\n[\t ]+/g)) {
-			matches.push(...match)
-		}
-	}
-	if (matches.length) {
-		const size = Math.min(...matches.map((value) => value.length - 1))
-		const pattern = new RegExp(`\n[\t ]{${ size }}`, 'g')
-		for (let i = 0; i < strings.length; i++) {
-			strings[i] = strings[i].replace(pattern, '\n')
-		}
-	}
-	strings[0] = strings[0].replace(/^\r?\n/, '')
-	let string = strings[0]
-	for (let i = 0; i < values.length; i++) {
-		string += values[i] + strings[i + 1]
-	}
-	return string
-}
-
 const execCmd = (command, workingDir, trimResult = true) => {
 	core.debug(`EXEC: "${ command }" IN ${ workingDir }`)
 	return new Promise((resolve, reject) => {
@@ -30700,7 +30743,6 @@ const arrayEquals = (array1, array2) => Array.isArray(array1) && Array.isArray(a
 
 module.exports = {
 	forEach,
-	dedent,
 	addTrailingSlash,
 	pathIsDirectory,
 	execCmd,
@@ -30924,8 +30966,7 @@ const core = __nccwpck_require__(2186)
 const fs = __nccwpck_require__(7147)
 
 const Git = __nccwpck_require__(109)
-const { forEach, dedent, addTrailingSlash, pathIsDirectory, copy, remove, arrayEquals, execCmd } = __nccwpck_require__(8505)
-
+const { forEach, addTrailingSlash, pathIsDirectory, copy, remove, execCmd } = __nccwpck_require__(8505)
 const {
 	parseConfig,
 	PR_LABELS,
@@ -31103,26 +31144,7 @@ async function run() {
 				github.context.payload.commits.forEach((commit) => commitMessages.push(commit.message))
 			}
 
-			// Build the PR title from commit message(s) and list the commit messages in the PR description.
-			const title = commitMessages.map((message) => message.split('\n')[0]).join('; ')
-
-			let originalCommitMessages = commitMessages.map((message) => {
-				const multiline = message.split('\n')
-				if (multiline.length > 1) {
-					return `<li><details><summary>${ multiline[0] }</summary>${ multiline.slice(1).join('\n') }</details></li>`
-				}
-				return `<li>${ message }</li>`
-			}).join('') ?? '_No Source Repo Commit Messages (PR created from manual workflow run)._'
-
-			const contents = dedent(`
-				<details open>
-				<summary>Source Repo Commit Messages</summary>
-				<ul>
-				${ originalCommitMessages }
-				</ul>
-				</details>
-			`)
-			const pullRequest = await git.createOrUpdatePr(title, contents)
+			const pullRequest = await git.createOrUpdatePr(commitMessages)
 
 			if (PR_LABELS !== undefined && PR_LABELS.length > 0 && !FORK) {
 				core.info(`Adding label(s) "${ PR_LABELS.join(', ') }" to PR`)

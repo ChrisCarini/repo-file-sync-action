@@ -5,6 +5,7 @@ const { GitHub, getOctokitOptions } = require('@actions/github/lib/utils')
 const { throttling } = require('@octokit/plugin-throttling')
 const path = require('path')
 const fs = require('fs')
+const dedent = require('dedent-js')
 
 const {
 	GITHUB_TOKEN,
@@ -19,7 +20,7 @@ const {
 	FORK,
 } = require('./config')
 
-const { dedent, execCmd } = require('./helpers')
+const { execCmd } = require('./helpers')
 
 const GH_RUN_ID = process.env.GITHUB_RUN_ID || 0
 const PR_BEING_UPDATED_WARNING = `<div align=center>
@@ -427,21 +428,50 @@ class Git {
 		})
 	}
 
-	async createOrUpdatePr(title, contents) {
+	async createOrUpdatePr(commitMessages) {
 		const srcRepoBeforeRef = this.getSrcRepoBeforeRef()
 		core.debug(`srcRepoBeforeRef: ${ srcRepoBeforeRef }`)
 
-		const body = dedent(`
-			Synced local file(s) with [${ GITHUB_REPOSITORY }](https://github.com/${ GITHUB_REPOSITORY }).
+		// Build the PR title from commit message(s) and list the commit messages in the PR description.
+		const title = commitMessages.map((message) => message.split('\n')[0]).join('; ')
 
-			${ contents }
-			
-			<!-- srcRepoBeforeRef::${ srcRepoBeforeRef } -->
+		let originalCommitMessages = commitMessages.map((message) => {
+			const multiline = message.split('\n')
+			if (multiline.length > 1) {
+				// We build the return value this way to ensure that none of the lines are indented.
+				// Tried using `dedent` methods, however the way we were building the strings needed
+				// to deal with parsing a multiline commit message that may have different indent
+				// levels that were desired to be preserved. This works, it's not pretty, but works.
+				return [
+					'<li>',
+					'<details>',
+					`<summary>${ multiline[0] }</summary>`,
+					...multiline.slice(1),
+					'</details>',
+					'</li>',
+				].join('\n')
+			}
+			return `<li>${ message }</li>`
+		}).join('') ?? '_No Source Repo Commit Messages (PR created from manual workflow run)._'
 
-			---
-
-			This PR was ${ this.existingPr ? 'updated' : 'created' } automatically by the [ChrisCarini/repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) workflow run [#${ process.env.GITHUB_RUN_ID || 0 }](https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ process.env.GITHUB_RUN_ID || 0 })
-		`)
+		// We build the body this way to ensure that none of the lines are indented.
+		// Tried using `dedent` methods, however we found that sometimes there would
+		// still be unnecessary indentation for the first few elements (our 'text'
+		// and <details> tags). By building the string this way, we ensure that there
+		// is no whitespace before any of the lines we are introducing.
+		// This works, it's not pretty, but works.
+		const body = [
+			`Synced local file(s) with [${ GITHUB_REPOSITORY }](https://github.com/${ GITHUB_REPOSITORY }).`,
+			'<details open>',
+			'<summary>Source Repo Commit Messages</summary>',
+			'<ul>',
+			originalCommitMessages,
+			'</ul>',
+			'</details>',
+			`<!-- srcRepoBeforeRef::${ srcRepoBeforeRef } -->`,
+			'\n---\n', // horizontal line
+			`This PR was ${ this.existingPr ? 'updated' : 'created' } automatically by the [ChrisCarini/repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) workflow run [#${ process.env.GITHUB_RUN_ID || 0 }](https://github.com/${ GITHUB_REPOSITORY }/actions/runs/${ process.env.GITHUB_RUN_ID || 0 })`,
+		].join('\n')
 
 		if (this.existingPr) {
 			core.info(`Overwriting existing PR`)
