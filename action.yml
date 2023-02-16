@@ -39,6 +39,10 @@ inputs:
     description: |
       Teams to request a review of the pull request from. Defaults to none
     required: false
+  AUTO_MERGE_MERGE_METHOD:
+    description: |
+      If set, Auto-Merge will be enabled on the opened PRs. Valid values include 'MERGE', 'REBASE', or 'SQUASH'.  Defaults to not enabling auto-merge
+    required: false
   COMMIT_PREFIX:
     description: |
       Prefix for commit message and pull request title. Defaults to 🔄

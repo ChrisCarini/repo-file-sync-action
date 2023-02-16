@@ -54,7 +54,8 @@ class Git {
 
 		const octokit = new Octokit(options)
 
-		// We only need the rest client
+		// We need the graphql & rest clients
+		this.graphql = octokit.graphql
 		this.github = octokit.rest
 	}
 
@@ -432,6 +433,19 @@ class Git {
 		const srcRepoBeforeRef = this.getSrcRepoBeforeRef()
 		core.debug(`srcRepoBeforeRef: ${ srcRepoBeforeRef }`)
 
+		console.debug('BEFORE')
+		console.debug(JSON.stringify(commitMessages, 2))
+		// Change a commit message FROM `foobar (#123)` TO `foobar (https://gh.com/<owner>/<repo>/pull/123)`
+		commitMessages = commitMessages.map(commitMessage => {
+			return commitMessage
+				// Change a commit message FROM `foobar (#123)` TO `foobar (https://gh.com/<owner>/<repo>/pull/123)`
+				.replace(new RegExp('\(#([0-9]+)\)', 'g'), `${ github.context.payload.repository.html_url }/pull/$2`)
+				// Change a commit message FROM `foobar (https://gh.com/<owner>/<repo>/pull/123)` TO `foobar (<owner>/<repo>/pull/123)`
+				.replace('https://github.com/', '')
+		})
+		console.debug('AFTER')
+		console.debug(JSON.stringify(commitMessages, 2))
+
 		// Build the PR title from commit message(s) and list the commit messages in the PR description.
 		const title = commitMessages.map((message) => message.split('\n')[0]).join('; ')
 
@@ -506,6 +520,64 @@ class Git {
 		this.existingPr = data
 
 		return data
+	}
+
+	async enablePrAutoMerge(mergeMethod) {
+		if (!this.existingPr) {
+			core.warning(`Unable to enable Auto-Merge on PR; no existing PR found.`)
+			return
+		}
+
+		if (![ 'MERGE', 'REBASE', 'SQUASH' ].includes(mergeMethod.toUpperCase())) {
+			core.error(`AUTO_MERGE_MERGE_METHOD must be one of the following (or not defined): 'MERGE', 'REBASE', or 'SQUASH'.`)
+		}
+
+		core.info(`Enabling Auto-Merge on ${ this.repo.user }/${ this.repo.name } PR# ${ this.existingPr.number }`)
+		core.debug(`owner:     ${ this.repo.user }`)
+		core.debug(`repo:      ${ this.repo.name }`)
+		core.debug(`pr_number: ${ this.existingPr.number }`)
+
+		const { repository: { pullRequest: { id: prId } } } = await this.graphql(
+			`query GetPullRequestId($owner: String!, $repo: String!, $pullRequestNumber: Int!) {
+			  repository(owner: $owner, name: $repo) {
+				pullRequest(number: $pullRequestNumber) {
+				  id
+				}
+			  }
+			}`,
+			{
+				owner: this.repo.user,
+				repo: this.repo.name,
+				pullRequestNumber: this.existingPr.number
+			}
+		)
+
+		core.debug(`${ this.repo.user }/${ this.repo.name } PR# ${ this.existingPr.number } -> PR ID: ${ prId }`)
+
+		const enablePullRequestAutoMergeResult = await this.graphql(
+			`mutation ($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
+			  enablePullRequestAutoMerge(input: {
+				pullRequestId: $pullRequestId,
+				mergeMethod: $mergeMethod
+			  }) {
+				pullRequest {
+				  autoMergeRequest {
+					enabledAt
+					enabledBy {
+					  login
+					}
+				  }
+				}
+			  }
+			}`,
+			{
+				pullRequestId: prId,
+				mergeMethod: mergeMethod.toUpperCase()
+			}
+		)
+
+		console.debug(`enablePullRequestAutoMerge on PR ID: ${ prId }:`)
+		console.debug(JSON.stringify(enablePullRequestAutoMergeResult, null, 2))
 	}
 
 	getSrcRepoBeforeRef() {

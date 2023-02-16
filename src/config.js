@@ -65,6 +65,10 @@ try {
 			key: 'TEAM_REVIEWERS',
 			type: 'array'
 		}),
+		AUTO_MERGE_MERGE_METHOD: getInput({
+			key: 'AUTO_MERGE_MERGE_METHOD',
+			default: undefined
+		}),
 		GIT_EMAIL: getInput({
 			key: 'GIT_EMAIL'
 		}),

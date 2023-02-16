@@ -11,6 +11,7 @@ const {
 	FORK,
 	REVIEWERS,
 	TEAM_REVIEWERS,
+	AUTO_MERGE_MERGE_METHOD,
 } = require('./config')
 const github = require('@actions/github')
 
@@ -150,10 +151,12 @@ async function run() {
 
 				// Otherwise, there are still local changes left, so commit them before pushing
 				core.debug(`Creating commit`)
-				await git.commit(commit.message)
+				// Change a commit message FROM `foobar (#123)` TO `foobar (https://gh.com/<owner>/<repo>/pull/123)`
+				let commitMessage = commit.message.replace(new RegExp('\(#([0-9]+)\)', 'g'), `${ github.context.payload.repository.html_url }/pull/$2`)
+				await git.commit(commitMessage)
 				modified.push({
 					dest: DST_REPO,
-					commitMessage: commit.message,
+					commitMessage: commitMessage,
 				})
 			})
 
@@ -200,6 +203,10 @@ async function run() {
 			if (TEAM_REVIEWERS !== undefined && TEAM_REVIEWERS.length > 0 && !FORK) {
 				core.info(`Adding team reviewer(s) "${ TEAM_REVIEWERS.join(', ') }" to PR`)
 				await git.addPrTeamReviewers(TEAM_REVIEWERS)
+			}
+
+			if (AUTO_MERGE_MERGE_METHOD !== undefined) {
+				await git.enablePrAutoMerge(AUTO_MERGE_MERGE_METHOD)
 			}
 
 			core.notice(`Pull Request #${ pullRequest.number } ${ existingPr ? 'updated' : 'created' }: ${ pullRequest.html_url }`)
