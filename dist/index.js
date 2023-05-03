@@ -28801,6 +28801,16 @@ class Git {
 			core.error(`AUTO_MERGE_MERGE_METHOD must be one of the following (or not defined): 'MERGE', 'REBASE', or 'SQUASH'.`)
 		}
 
+		const { data: { private: isRepoPrivate } } = await octokit.rest.repos.get({
+			owner: this.repo.user,
+			repo: this.repo.name,
+		})
+
+		if (isRepoPrivate) {
+			core.warning(`Private repos do not support auto-merge. ${ this.repo.user }/${ this.repo.name } is private.`)
+			return
+		}
+
 		core.info(`Enabling Auto-Merge on ${ this.repo.user }/${ this.repo.name } PR# ${ this.existingPr.number }`)
 		core.debug(`owner:     ${ this.repo.user }`)
 		core.debug(`repo:      ${ this.repo.name }`)
