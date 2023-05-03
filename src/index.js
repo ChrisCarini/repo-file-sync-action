@@ -170,8 +170,10 @@ async function run() {
 
 			const commitMessages = []
 			if (github.context.payload.forced) {
+				core.debug('Using commit messages from commits with modified files only.')
 				modified.forEach((commit) => commitMessages.push(commit.commitMessage))
 			} else if (existingPr) {
+				core.debug('Using commit messages from existing PR + github context payload commits.')
 				const { data } = await git.github.pulls.listCommits({
 					owner: item.repo.user,
 					repo: item.repo.name,
@@ -180,6 +182,7 @@ async function run() {
 				data.forEach((commit) => commitMessages.push(commit.commit.message))
 				github.context.payload.commits.forEach((commit) => commitMessages.push(commit.message))
 			} else {
+				core.debug('Using commit messages from github context payload commits.')
 				github.context.payload.commits.forEach((commit) => commitMessages.push(commit.message))
 			}
 
