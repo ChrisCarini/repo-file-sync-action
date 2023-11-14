@@ -190,26 +190,52 @@ async function run() {
 
 			if (PR_LABELS !== undefined && PR_LABELS.length > 0 && !FORK) {
 				core.info(`Adding label(s) "${ PR_LABELS.join(', ') }" to PR`)
-				await git.addPrLabels(PR_LABELS)
+				try {
+					await git.addPrLabels(PR_LABELS)
+				} catch (err) {
+					core.warning(`Failed to add label(s) "${PR_LABELS.join(', ')}" to PR`)
+					core.warning(err.message)
+				}
 			}
 
 			if (ASSIGNEES !== undefined && ASSIGNEES.length > 0 && !FORK) {
 				core.info(`Adding assignee(s) "${ ASSIGNEES.join(', ') }" to PR`)
-				await git.addPrAssignees(ASSIGNEES)
+				try {
+					await git.addPrAssignees(ASSIGNEES)
+				} catch (err) {
+					core.warning(`Failed to add assignee(s) "${ASSIGNEES.join(', ')}" to PR`)
+					core.warning(err.message)
+				}
 			}
 
 			if (REVIEWERS !== undefined && REVIEWERS.length > 0 && !FORK) {
 				core.info(`Adding reviewer(s) "${ REVIEWERS.join(', ') }" to PR`)
-				await git.addPrReviewers(REVIEWERS)
+				try {
+					await git.addPrReviewers(REVIEWERS)
+				} catch (err) {
+					core.warning(`Failed to add reviewer(s) "${REVIEWERS.join(', ')}" to PR`)
+					core.warning(err.message)
+				}
 			}
 
 			if (TEAM_REVIEWERS !== undefined && TEAM_REVIEWERS.length > 0 && !FORK) {
 				core.info(`Adding team reviewer(s) "${ TEAM_REVIEWERS.join(', ') }" to PR`)
-				await git.addPrTeamReviewers(TEAM_REVIEWERS)
+				try {
+					await git.addPrTeamReviewers(TEAM_REVIEWERS)
+				} catch (err) {
+					core.warning(`Failed to add team reviewer(s) "${TEAM_REVIEWERS.join(', ')}" to PR`)
+					core.warning(err.message)
+				}
 			}
 
 			if (AUTO_MERGE_MERGE_METHOD !== undefined) {
-				await git.enablePrAutoMerge(AUTO_MERGE_MERGE_METHOD)
+				try {
+					core.info(`Enabling auto-merge on PR`)
+					await git.enablePrAutoMerge(AUTO_MERGE_MERGE_METHOD)
+				} catch (err) {
+					core.warning(`Failed to enable auto-merge on PR`)
+					core.warning(err.message)
+				}
 			}
 
 			core.notice(`Pull Request #${ pullRequest.number } ${ existingPr ? 'updated' : 'created' }: ${ pullRequest.html_url }`)
