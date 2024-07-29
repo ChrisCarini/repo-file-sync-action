@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/betahuhn/repo-file-sync-action.git"
+    "url": "git+https://github.com/ChrisCarini/repo-file-sync-action.git"
   },
   "keywords": [
     "sync",
@@ -23,7 +23,7 @@
   "author": "Maximilian Schiller <schiller@mxis.ch>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/betahuhn/repo-file-sync-action/issues"
+    "url": "https://github.com/ChrisCarini/repo-file-sync-action/issues"
   },
   "homepage": "https://github.com/marketplace/actions/repo-file-sync-action",
   "dependencies": {
