@@ -156,9 +156,9 @@ class Git {
 	async createPrBranch(existingPr) {
 		core.debug(`Creating PR Branch ${ this.prBranch }`)
 
-		let checkout_existing_branch = existingPr !== undefined
+		const checkoutExistingBranch = existingPr !== undefined
 
-		if (checkout_existing_branch) {
+		if (checkoutExistingBranch) {
 			await execCmd(
 				`git remote set-branches origin "${ this.prBranch }"`,
 				this.workingDir
@@ -169,7 +169,7 @@ class Git {
 			)
 		}
 
-		await this.checkout(this.prBranch, this.workingDir, !checkout_existing_branch)
+		await this.checkout(this.prBranch, this.workingDir, !checkoutExistingBranch)
 	}
 
 	async add(file) {
@@ -366,7 +366,7 @@ class Git {
 	}
 
 	async deepenCheckout(depth, workingDir) {
-		let output = await execCmd(
+		const output = await execCmd(
 			`git fetch --deepen=${ depth }`,
 			workingDir,
 		)
@@ -436,7 +436,7 @@ class Git {
 		console.debug('BEFORE')
 		console.debug(JSON.stringify(commitMessages, 2))
 		// Change a commit message FROM `foobar (#123)` TO `foobar (https://gh.com/<owner>/<repo>/pull/123)`
-		commitMessages = commitMessages.map(commitMessage => {
+		commitMessages = commitMessages.map((commitMessage) => {
 			return commitMessage
 				// Change a commit message FROM `foobar (#123)` TO `foobar (https://gh.com/<owner>/<repo>/pull/123)`
 				.replace(new RegExp('\(#([0-9]+)\)', 'g'), `${ github.context.payload.repository.html_url }/pull/$2`)
@@ -449,7 +449,7 @@ class Git {
 		// Build the PR title from commit message(s) and list the commit messages in the PR description.
 		const title = commitMessages.map((message) => message.split('\n')[0]).join('; ')
 
-		let originalCommitMessages = commitMessages.map((message) => {
+		const originalCommitMessages = commitMessages.map((message) => {
 			const multiline = message.split('\n')
 			if (multiline.length > 1) {
 				// We build the return value this way to ensure that none of the lines are indented.

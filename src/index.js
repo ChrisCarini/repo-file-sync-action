@@ -82,7 +82,7 @@ async function run() {
 			// If the push was forced, or there were multiple commits, deepen the checkouts
 			if (github.context.payload?.forced || github.context.payload?.commits?.length > 1) {
 				// let fetchDepth = Math.max(existingPrCommitsLength, github.context.payload.commits.length)
-				let fetchDepth = existingPrCommitsLength + github.context.payload.commits.length
+				const fetchDepth = existingPrCommitsLength + github.context.payload.commits.length
 				await git.deepenCheckout(fetchDepth, SRC_REPO)
 				await git.deepenCheckout(fetchDepth, DST_REPO)
 			}
@@ -103,12 +103,12 @@ async function run() {
 				// (b) get the commits between `(a)..HEAD` for SRC_REPO & build the array of commits
 				const commitHashes = await execCmd(`git log --reverse --format='%H' ${ srcRepoBaseCommitSha }..HEAD`, SRC_REPO)
 				core.debug(`commit hashes: ${ commitHashes }`)
-				let individualCommits = commitHashes?.split('\n')
+				const individualCommits = commitHashes?.split('\n')
 				core.debug(`individual commit hashes: ${ individualCommits }`)
 				iterator = (await Promise.all(individualCommits?.map(async (hash, idx) => {
 					core.debug(`processing hash #${ idx }: ${ hash }`)
 					return await git.getCommitShaAndMessage(hash, SRC_REPO)
-				}))).filter(commit => commit.sha !== '' && commit.message !== '')
+				}))).filter((commit) => commit.sha !== '' && commit.message !== '')
 
 				// (c) reset DST_REPO to the base sha
 				await execCmd(
@@ -116,7 +116,7 @@ async function run() {
 					DST_REPO
 				)
 			}
-				// If the payload was not force-pushed, but contains commits, we simply build the
+			// If the payload was not force-pushed, but contains commits, we simply build the
 			// iterator from the payload's commits.
 			else if (github.context.payload.commits) {
 				iterator = github.context.payload.commits.map((commit) => ({
@@ -124,7 +124,7 @@ async function run() {
 					message: commit.message,
 				}))
 			}
-				// Otherwise, we are likely run from `workflow_dispatch` event, so we just grab the
+			// Otherwise, we are likely run from `workflow_dispatch` event, so we just grab the
 			// current head commit to use.
 			else {
 				iterator = [ await git.getCommitShaAndMessage('HEAD', SRC_REPO) ]
@@ -152,7 +152,7 @@ async function run() {
 				// Otherwise, there are still local changes left, so commit them before pushing
 				core.debug(`Creating commit`)
 				// Change a commit message FROM `foobar (#123)` TO `foobar (https://gh.com/<owner>/<repo>/pull/123)`
-				let commitMessage = commit.message.replace(new RegExp('\(#([0-9]+)\)', 'g'), `${ github.context.payload.repository.html_url }/pull/$2`)
+				const commitMessage = commit.message.replace(new RegExp('\(#([0-9]+)\)', 'g'), `${ github.context.payload.repository.html_url }/pull/$2`)
 				await git.commit(commitMessage)
 				modified.push({
 					dest: DST_REPO,
@@ -193,7 +193,7 @@ async function run() {
 				try {
 					await git.addPrLabels(PR_LABELS)
 				} catch (err) {
-					core.warning(`Failed to add label(s) "${PR_LABELS.join(', ')}" to PR`)
+					core.warning(`Failed to add label(s) "${ PR_LABELS.join(', ') }" to PR`)
 					core.warning(err.message)
 				}
 			}
@@ -203,7 +203,7 @@ async function run() {
 				try {
 					await git.addPrAssignees(ASSIGNEES)
 				} catch (err) {
-					core.warning(`Failed to add assignee(s) "${ASSIGNEES.join(', ')}" to PR`)
+					core.warning(`Failed to add assignee(s) "${ ASSIGNEES.join(', ') }" to PR`)
 					core.warning(err.message)
 				}
 			}
@@ -213,7 +213,7 @@ async function run() {
 				try {
 					await git.addPrReviewers(REVIEWERS)
 				} catch (err) {
-					core.warning(`Failed to add reviewer(s) "${REVIEWERS.join(', ')}" to PR`)
+					core.warning(`Failed to add reviewer(s) "${ REVIEWERS.join(', ') }" to PR`)
 					core.warning(err.message)
 				}
 			}
@@ -223,7 +223,7 @@ async function run() {
 				try {
 					await git.addPrTeamReviewers(TEAM_REVIEWERS)
 				} catch (err) {
-					core.warning(`Failed to add team reviewer(s) "${TEAM_REVIEWERS.join(', ')}" to PR`)
+					core.warning(`Failed to add team reviewer(s) "${ TEAM_REVIEWERS.join(', ') }" to PR`)
 					core.warning(err.message)
 				}
 			}
