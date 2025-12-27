@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint ./src",
     "start": "node src/index.js",
-    "build": "ncc build src/index.js -o dist"
+    "build": "ncc build src/index.js -o dist",
+    "package": "npm run build"
   },
   "repository": {
     "type": "git",
