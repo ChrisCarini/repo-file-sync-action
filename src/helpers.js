@@ -78,7 +78,7 @@ const copy = async (src, dest, isDirectory, file) => {
     }
   } else {
     core.debug(`Copy ${src} to ${dest}`);
-    await fs.copy(src, dest, file.exclude !== undefined && { filter: filterFunc });
+    await fs.copy(src, dest, file.exclude !== undefined ? { filter: filterFunc } : {});
   }
 
   // If it is a directory and deleteOrphaned is enabled - check if there are any files that were removed from source dir and remove them in destination dir
