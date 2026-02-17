@@ -1,13 +1,13 @@
-const { parse } = require('@putout/git-status-porcelain');
-const core = require('@actions/core');
-const github = require('@actions/github');
-const { GitHub, getOctokitOptions } = require('@actions/github/lib/utils');
-const { throttling } = require('@octokit/plugin-throttling');
-const path = require('path');
-const fs = require('fs');
-const dedent = require('dedent-js');
+import { parse } from '@putout/git-status-porcelain';
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import { GitHub, getOctokitOptions } from '@actions/github/lib/utils';
+import { throttling } from '@octokit/plugin-throttling';
+import path from 'path';
+import fs from 'fs';
+import dedent from 'dedent-js';
 
-const {
+import {
   GITHUB_TOKEN,
   IS_INSTALLATION_TOKEN,
   IS_FINE_GRAINED,
@@ -15,12 +15,15 @@ const {
   GIT_EMAIL,
   TMP_DIR,
   GITHUB_REPOSITORY,
-  OVERWRITE_EXISTING_PR,
   BRANCH_PREFIX,
   FORK,
-} = require('./config');
+} from './config.js';
 
-const { execCmd } = require('./helpers');
+import { execCmd } from './helpers.js';
+
+// OVERWRITE_EXISTING_PR is not configurable and defaults to true (undefined !== false)
+// When false, a timestamp would be appended to branch names to create new PRs
+const OVERWRITE_EXISTING_PR = undefined;
 
 const GH_RUN_ID = process.env.GITHUB_RUN_ID || 0;
 const PR_BEING_UPDATED_WARNING = `<div align=center>
@@ -633,4 +636,4 @@ class Git {
   }
 }
 
-module.exports = Git;
+export default Git;

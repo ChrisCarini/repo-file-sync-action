@@ -1,9 +1,9 @@
-const fs = require('fs-extra');
-const readfiles = require('node-readfiles');
-const { exec } = require('child_process');
-const core = require('@actions/core');
-const path = require('path');
-const nunjucks = require('nunjucks');
+import fs from 'fs-extra';
+import readfiles from 'node-readfiles';
+import { exec } from 'child_process';
+import * as core from '@actions/core';
+import path from 'path';
+import nunjucks from 'nunjucks';
 
 nunjucks.configure({ autoescape: true, trimBlocks: true, lstripBlocks: true });
 
@@ -114,12 +114,4 @@ const arrayEquals = (array1, array2) =>
   array1.length === array2.length &&
   array1.every((value, i) => value === array2[i]);
 
-module.exports = {
-  forEach,
-  addTrailingSlash,
-  pathIsDirectory,
-  execCmd,
-  copy,
-  remove,
-  arrayEquals,
-};
+export { forEach, addTrailingSlash, pathIsDirectory, execCmd, copy, remove, arrayEquals };

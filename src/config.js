@@ -1,8 +1,8 @@
-const core = require('@actions/core');
-const yaml = require('js-yaml');
-const fs = require('fs-extra');
-const path = require('path');
-const { getInput } = require('action-input-parser');
+import * as core from '@actions/core';
+import { load as yamlLoad } from 'js-yaml';
+import fs from 'fs-extra';
+import path from 'path';
+import { getInput } from 'action-input-parser';
 
 const REPLACE_DEFAULT = true;
 const TEMPLATE_DEFAULT = false;
@@ -154,7 +154,7 @@ const parseFiles = (files) => {
 const parseConfig = async () => {
   const fileContent = await fs.promises.readFile(context.CONFIG_PATH);
 
-  const configObject = yaml.load(fileContent.toString());
+  const configObject = yamlLoad(fileContent.toString());
 
   const result = {};
 
@@ -207,7 +207,39 @@ const parseConfig = async () => {
   return Object.values(result);
 };
 
-module.exports = {
-  ...context,
+const {
+  GITHUB_TOKEN,
+  GITHUB_REPOSITORY,
+  BRANCH_PREFIX,
+  IS_INSTALLATION_TOKEN,
+  IS_FINE_GRAINED,
+  CONFIG_PATH,
+  PR_LABELS,
+  ASSIGNEES,
+  REVIEWERS,
+  TEAM_REVIEWERS,
+  AUTO_MERGE_MERGE_METHOD,
+  GIT_EMAIL,
+  GIT_USERNAME,
+  TMP_DIR,
+  FORK,
+} = context;
+
+export {
+  GITHUB_TOKEN,
+  GITHUB_REPOSITORY,
+  BRANCH_PREFIX,
+  IS_INSTALLATION_TOKEN,
+  IS_FINE_GRAINED,
+  CONFIG_PATH,
+  PR_LABELS,
+  ASSIGNEES,
+  REVIEWERS,
+  TEAM_REVIEWERS,
+  AUTO_MERGE_MERGE_METHOD,
+  GIT_EMAIL,
+  GIT_USERNAME,
+  TMP_DIR,
+  FORK,
   parseConfig,
 };

@@ -1,6 +1,7 @@
 {
   "name": "repo-file-sync-action",
   "version": "1.19.0",
+  "type": "module",
   "description": "GitHub Action to keep files like Action workflows or entire directories in sync between multiple repositories.",
   "main": "dist/index.js",
   "scripts": {
