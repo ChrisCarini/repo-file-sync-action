@@ -49,6 +49,8 @@ export default defineConfig([
       '@stylistic/semi': ['error', 'always'],
       '@stylistic/type-annotation-spacing': 'error',
       'import/no-commonjs': 'off',
+      'import/extensions': 'off',
+      'import/no-unresolved': ['error', { ignore: ['@octokit/plugin-throttling'] }],
     },
   },
   {

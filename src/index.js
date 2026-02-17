@@ -1,9 +1,9 @@
-const core = require('@actions/core');
-const fs = require('fs');
+import * as core from '@actions/core';
+import fs from 'fs';
 
-const Git = require('./git');
-const { forEach, addTrailingSlash, pathIsDirectory, copy, remove, execCmd } = require('./helpers');
-const {
+import Git from './git.js';
+import { forEach, addTrailingSlash, pathIsDirectory, copy, remove, execCmd } from './helpers.js';
+import {
   parseConfig,
   PR_LABELS,
   ASSIGNEES,
@@ -12,8 +12,8 @@ const {
   REVIEWERS,
   TEAM_REVIEWERS,
   AUTO_MERGE_MERGE_METHOD,
-} = require('./config');
-const github = require('@actions/github');
+} from './config.js';
+import * as github from '@actions/github';
 
 async function syncAndAddFile(git, file, destRepo) {
   const fileExists = fs.existsSync(file.source);
