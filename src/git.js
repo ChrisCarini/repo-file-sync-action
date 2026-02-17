@@ -21,6 +21,8 @@ import {
 
 import { execCmd } from './helpers.js';
 
+// OVERWRITE_EXISTING_PR is not configurable and defaults to true (undefined !== false)
+// When false, a timestamp would be appended to branch names to create new PRs
 const OVERWRITE_EXISTING_PR = undefined;
 
 const GH_RUN_ID = process.env.GITHUB_RUN_ID || 0;

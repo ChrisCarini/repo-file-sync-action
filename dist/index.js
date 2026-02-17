@@ -52283,8 +52283,6 @@ const parseConfig = async () => {
   return Object.values(result);
 };
 
-
-
 const {
   GITHUB_TOKEN,
   GITHUB_REPOSITORY,
@@ -52302,6 +52300,8 @@ const {
   TMP_DIR,
   FORK,
 } = config_context;
+
+
 
 // EXTERNAL MODULE: ./node_modules/node-readfiles/index.js
 var node_readfiles = __nccwpck_require__(494);
@@ -52442,6 +52442,8 @@ const arrayEquals = (array1, array2) =>
 
 
 
+// OVERWRITE_EXISTING_PR is not configurable and defaults to true (undefined !== false)
+// When false, a timestamp would be appended to branch names to create new PRs
 const OVERWRITE_EXISTING_PR = undefined;
 
 const GH_RUN_ID = process.env.GITHUB_RUN_ID || 0;
