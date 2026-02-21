@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import readfiles from 'node-readfiles';
+import { readdir } from 'node:fs/promises';
 import { exec } from 'child_process';
 import * as core from '@actions/core';
 import path from 'path';
@@ -37,6 +37,13 @@ const pathIsDirectory = async (filePath) => {
   return stat.isDirectory();
 };
 
+const listFiles = async (dir) => {
+  const entries = await readdir(dir, { recursive: true, withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.relative(dir, path.join(entry.parentPath, entry.name)));
+};
+
 const write = async (src, dest, context) => {
   if (typeof context !== 'object') {
     context = {};
@@ -61,7 +68,7 @@ const copy = async (src, dest, isDirectory, file) => {
     if (isDirectory) {
       core.debug(`Render all files in directory ${src} to ${dest}`);
 
-      const srcFileList = await readfiles(src, { readContents: false, hidden: true });
+      const srcFileList = await listFiles(src);
       for (const srcFile of srcFileList) {
         if (!filterFunc(srcFile)) {
           continue;
@@ -83,8 +90,8 @@ const copy = async (src, dest, isDirectory, file) => {
 
   // If it is a directory and deleteOrphaned is enabled - check if there are any files that were removed from source dir and remove them in destination dir
   if (deleteOrphaned) {
-    const srcFileList = await readfiles(src, { readContents: false, hidden: true });
-    const destFileList = await readfiles(dest, { readContents: false, hidden: true });
+    const srcFileList = await listFiles(src);
+    const destFileList = await listFiles(dest);
 
     for (const destFile of destFileList) {
       if (srcFileList.indexOf(destFile) === -1) {
