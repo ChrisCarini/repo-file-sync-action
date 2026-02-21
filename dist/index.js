@@ -8215,189 +8215,814 @@ module.exports = { stringify, stripBom }
 
 /***/ }),
 
-/***/ 9961:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.buildFilter = void 0;
-const buildFilter = (filtersParam) => {
-    const filters = filtersParam instanceof Array ? filtersParam.slice() : [filtersParam];
-    const filterArray = [];
-    if (filters.length === 0)
-        return null;
-    while (filters.length > 0) {
-        const filter = filters.shift();
-        filterArray.push(`\\/?${filter
-            .replace(/([./\\])/g, '\\$1')
-            .replace(/(\*?)(\*)(?!\*)/g, (match, prefix) => {
-            if (prefix === '*') {
-                return match;
-            }
-            return '[^\\/]*';
-        })
-            .replace(/\?/g, '[^\\/]?')
-            .replace(/\*\*/g, '.*')
-            .replace(/([\-\+\|])/g, '\\$1')}`);
-    }
-    return new RegExp(`^${filterArray.join('|')}$`, 'i');
-};
-exports.buildFilter = buildFilter;
-
-
-/***/ }),
-
-/***/ 8668:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.FilenameFormat = void 0;
-var FilenameFormat;
-(function (FilenameFormat) {
-    FilenameFormat[FilenameFormat["RELATIVE"] = 0] = "RELATIVE";
-    FilenameFormat[FilenameFormat["FULL_PATH"] = 1] = "FULL_PATH";
-    FilenameFormat[FilenameFormat["FILENAME"] = 2] = "FILENAME";
-})(FilenameFormat || (exports.FilenameFormat = FilenameFormat = {}));
-
-
-/***/ }),
-
 /***/ 7625:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function() {
 
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = ({ value: true });
-exports.m = readfiles;
-const fs = __nccwpck_require__(9896);
-const path = __nccwpck_require__(6928);
-const build_filter_1 = __nccwpck_require__(9961);
-const consts_1 = __nccwpck_require__(8668);
-function readfiles(dir, optionsProp, callbackProp) {
-    let callback = callbackProp;
-    let options = optionsProp;
-    if (typeof optionsProp === 'function') {
-        callback = optionsProp;
-        options = {};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    options = options || {};
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    callback = typeof callback === 'function' ? callback : () => { };
-    return new Promise((resolve, reject) => {
-        const files = [];
-        const subDirs = [];
-        const filterRegExp = options.filter && (0, build_filter_1.buildFilter)(options.filter);
-        const traverseDir = (dirPath, done) => {
-            fs.readdir(dirPath, (err, fileListProp) => {
-                let fileList = fileListProp;
-                if (err) {
-                    // if rejectOnError is not false, reject the promise
-                    if (options.rejectOnError !== false) {
-                        return reject(err);
-                    }
-                    return done(files);
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+define("src/build-filter", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.buildFilter = void 0;
+    const buildFilter = (filtersParam) => {
+        const filters = filtersParam instanceof Array ? filtersParam.slice() : [filtersParam];
+        const filterArray = [];
+        if (filters.length === 0)
+            return null;
+        while (filters.length > 0) {
+            const filter = filters.shift();
+            filterArray.push(`\\/?${filter
+                .replace(/([./\\])/g, '\\$1')
+                .replace(/(\*?)(\*)(?!\*)/g, (match, prefix) => {
+                if (prefix === '*') {
+                    return match;
                 }
-                // reverse the order of the files if the reverse option is true
-                if (options.reverse === true) {
-                    fileList = fileList.reverse();
-                }
-                const next = () => {
-                    // if the file list is empty then call done
-                    if (fileList.length === 0) {
-                        done(files);
-                        return;
+                return '[^\\/]*';
+            })
+                .replace(/\?/g, '[^\\/]?')
+                .replace(/\*\*/g, '.*')
+                .replace(/([\-\+\|])/g, '\\$1')}`);
+        }
+        return new RegExp(`^${filterArray.join('|')}$`, 'i');
+    };
+    exports.buildFilter = buildFilter;
+});
+define("src/build-filters.spec", ["require", "exports", "src/build-filter"], function (require, exports, build_filter_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    describe('buildFilter', () => {
+        it('creates a filter RegExp given a filter string', () => {
+            const result = (0, build_filter_1.buildFilter)('.');
+            expect(result).toEqual(/^\/?\.$/i);
+        });
+        it('creates a filter RegExp given a wildcard filter string', () => {
+            const result = (0, build_filter_1.buildFilter)('*');
+            expect(result).toEqual(/^\/?[^\/]*$/i);
+        });
+        it('creates a filter RegExp given a wildcard filter string', () => {
+            const result = (0, build_filter_1.buildFilter)('**');
+            expect(result).toEqual(/^\/?.*$/i);
+        });
+        it('creates a filter RegExp given an array of filters', () => {
+            const result = (0, build_filter_1.buildFilter)(['**/*123*', '**/abc.*']);
+            expect(result).toEqual(/^\/?.*\/[^\/]*123[^\/]*|\/?.*\/abc\.[^\/]*$/i);
+        });
+    });
+});
+define("src/consts", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.FilenameFormat = void 0;
+    var FilenameFormat;
+    (function (FilenameFormat) {
+        FilenameFormat[FilenameFormat["RELATIVE"] = 0] = "RELATIVE";
+        FilenameFormat[FilenameFormat["FULL_PATH"] = 1] = "FULL_PATH";
+        FilenameFormat[FilenameFormat["FILENAME"] = 2] = "FILENAME";
+    })(FilenameFormat = exports.FilenameFormat || (exports.FilenameFormat = {}));
+});
+define("src/readfiles", ["require", "exports", "fs", "path", "src/build-filter", "src/consts"], function (require, exports, fs, path, build_filter_2, consts_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.readfiles = void 0;
+    function readfiles(dir, optionsProp, callbackProp) {
+        let callback = callbackProp;
+        let options = optionsProp;
+        if (typeof optionsProp === 'function') {
+            callback = optionsProp;
+            options = {};
+        }
+        options = options || {};
+        callback = typeof callback === 'function' ? callback : () => { };
+        return new Promise((resolve, reject) => {
+            const files = [];
+            const subDirs = [];
+            const filterRegExp = options.filter && (0, build_filter_2.buildFilter)(options.filter);
+            const traverseDir = (dirPath, done) => {
+                fs.readdir(dirPath, (err, fileListProp) => {
+                    let fileList = fileListProp;
+                    if (err) {
+                        if (options.rejectOnError !== false) {
+                            return reject(err);
+                        }
+                        return done(files);
                     }
-                    const filename = fileList.shift();
-                    const relFilename = path.join(subDirs.join('/'), filename);
-                    const fullPath = path.join(dirPath, filename);
-                    // skip file if it's a hidden file and the hidden option is not set
-                    if (options.hidden !== true && /^\./.test(filename)) {
-                        return next();
+                    if (options.reverse === true) {
+                        fileList = fileList.reverse();
                     }
-                    // stat the full path
-                    fs.stat(fullPath, (err, stat) => {
-                        if (err) {
-                            // call callback with the error
-                            const result = callback(err, relFilename, null, stat);
-                            // if callback result is a function then call the result with next as a parameter
-                            if (typeof result === 'function' && !err) {
-                                return result(next);
-                            }
-                            // if rejectOnError is not false, reject the promise
-                            if (options.rejectOnError !== false) {
-                                return reject(err);
-                            }
+                    const next = () => {
+                        if (fileList.length === 0) {
+                            done(files);
+                            return;
+                        }
+                        const filename = fileList.shift();
+                        const relFilename = path.join(subDirs.join('/'), filename);
+                        const fullPath = path.join(dirPath, filename);
+                        if (options.hidden !== true && /^\./.test(filename)) {
                             return next();
                         }
-                        if (stat.isDirectory()) {
-                            // limit the depth of the traversal if depth is defined
-                            if (!isNaN(options.depth) && options.depth >= 0 && subDirs.length + 1 > options.depth) {
-                                return next();
-                            }
-                            // traverse the sub-directory
-                            subDirs.push(filename);
-                            traverseDir(fullPath, () => {
-                                subDirs.pop();
-                                next();
-                            });
-                        }
-                        else if (stat.isFile()) {
-                            // test filters, if it does not match move to next file
-                            if (filterRegExp && !filterRegExp.test(`/${relFilename}`)) {
-                                return next();
-                            }
-                            // set the format of the output filename
-                            let outputName = relFilename;
-                            if (options.filenameFormat === consts_1.FilenameFormat.FULL_PATH) {
-                                outputName = fullPath;
-                            }
-                            else if (options.filenameFormat === consts_1.FilenameFormat.FILENAME) {
-                                outputName = filename;
-                            }
-                            files.push(outputName);
-                            // promise to handle file reading (if not disabled)
-                            new Promise(resolve => {
-                                var _a;
-                                if (options.readContents === false) {
-                                    return resolve(null);
-                                }
-                                // read the file
-                                fs.readFile(fullPath, (_a = options === null || options === void 0 ? void 0 : options.encoding) !== null && _a !== void 0 ? _a : 'utf8', (err, content) => {
-                                    if (err)
-                                        throw err;
-                                    resolve(content);
-                                });
-                            })
-                                .then(content => {
-                                // call the callback with the content
-                                const result = callback(err, outputName, content, stat);
-                                // if callback result is a function then call the result with next as a parameter
+                        fs.stat(fullPath, (err, stat) => {
+                            if (err) {
+                                const result = callback(err, relFilename, null, stat);
                                 if (typeof result === 'function' && !err) {
                                     return result(next);
                                 }
-                                // call the next if async is not true
-                                options.async !== true && next();
-                            })
-                                .catch(err => {
                                 if (options.rejectOnError !== false) {
                                     return reject(err);
                                 }
+                                return next();
+                            }
+                            if (stat.isDirectory()) {
+                                if (!isNaN(options.depth) && options.depth >= 0 && subDirs.length + 1 > options.depth) {
+                                    return next();
+                                }
+                                subDirs.push(filename);
+                                traverseDir(fullPath, () => {
+                                    subDirs.pop();
+                                    next();
+                                });
+                            }
+                            else if (stat.isFile()) {
+                                if (filterRegExp && !filterRegExp.test(`/${relFilename}`)) {
+                                    return next();
+                                }
+                                let outputName = relFilename;
+                                if (options.filenameFormat === consts_1.FilenameFormat.FULL_PATH) {
+                                    outputName = fullPath;
+                                }
+                                else if (options.filenameFormat === consts_1.FilenameFormat.FILENAME) {
+                                    outputName = filename;
+                                }
+                                files.push(outputName);
+                                new Promise(resolve => {
+                                    var _a;
+                                    if (options.readContents === false) {
+                                        return resolve(null);
+                                    }
+                                    fs.readFile(fullPath, (_a = options === null || options === void 0 ? void 0 : options.encoding) !== null && _a !== void 0 ? _a : 'utf8', (err, content) => {
+                                        if (err)
+                                            throw err;
+                                        resolve(content);
+                                    });
+                                })
+                                    .then(content => {
+                                    const result = callback(err, outputName, content, stat);
+                                    if (typeof result === 'function' && !err) {
+                                        return result(next);
+                                    }
+                                    options.async !== true && next();
+                                })
+                                    .catch(err => {
+                                    if (options.rejectOnError !== false) {
+                                        return reject(err);
+                                    }
+                                    next();
+                                });
+                            }
+                            else {
                                 next();
-                            });
-                        }
-                        else {
-                            next();
-                        }
-                    });
-                };
-                next();
+                            }
+                        });
+                    };
+                    next();
+                });
+            };
+            traverseDir(dir, resolve);
+        });
+    }
+    exports.readfiles = readfiles;
+});
+define("src/index", ["require", "exports", "src/consts", "src/readfiles", "src/readfiles"], function (require, exports, consts_2, readfiles_1, readfiles_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.default = void 0;
+    __exportStar(consts_2, exports);
+    __exportStar(readfiles_1, exports);
+    Object.defineProperty(exports, "default", { enumerable: true, get: function () { return readfiles_2.readfiles; } });
+});
+define("test/fixtures", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.badDeepPathFixture = exports.deepPathFixture = exports.flatPathFixture = void 0;
+    exports.flatPathFixture = {
+        '/path/to/dir': {
+            'abc.txt': 'ABC',
+            'def.dat': 'DEF',
+            'test123.txt': '123',
+            'test456.dat': '456',
+        },
+    };
+    exports.deepPathFixture = {
+        '/path/to/dir': {
+            '.system': 'SYSTEM',
+            'def.dat': 'DEF',
+            'abc.txt': 'ABC',
+            'abc123.txt': 'ABC123',
+            subdir: {
+                '.dot': 'DOT',
+                'test456.dat': '456',
+                'test789.txt': '789',
+                'test123.txt': '123',
+                'abc123.txt': 'ABC123',
+                subsubdir: {
+                    '.hidden': 'HIDDEN',
+                    'abc123.dat': 'ABC123',
+                    'def456.dat': '456',
+                },
+            },
+            otherdir: {
+                '.other': 'DOT',
+                'test789.txt': '789',
+                'test123.txt': '123',
+                subsubdir: {
+                    '.hidden': 'HIDDEN',
+                    'abc123.txt': 'ABC123',
+                    'def456.txt': '456',
+                },
+            },
+        },
+    };
+    exports.badDeepPathFixture = {
+        '/path/to/dir': {
+            '.system': 'SYSTEM',
+            'def.dat': 'DEF',
+            'abc.txt': 'ABC',
+            'abc123.txt': 'ABC123',
+            subdir: {
+                '.dot': 'DOT',
+                'error-file.dat': false,
+                'test456.dat': '456',
+                'test789.txt': '789',
+                'test123.txt': '123',
+                'abc123.txt': 'ABC123',
+                subsubdir: {
+                    '.hidden': 'HIDDEN',
+                    'abc123.dat': 'ABC123',
+                    'def456.dat': '456',
+                },
+            },
+            otherdir: {
+                '.other': 'DOT',
+                'error-file.dat': false,
+                'test789.txt': '789',
+                'test123.txt': '123',
+                subsubdir: {
+                    '.hidden': 'HIDDEN',
+                    'abc123.txt': 'ABC123',
+                    'def456.txt': '456',
+                },
+            },
+        },
+    };
+});
+define("test/fs-helper", ["require", "exports", "fs"], function (require, exports, fs) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.mockFs = void 0;
+    const fattenFixtures = (fixtureMap, rootPath = '') => {
+        let flatMap = {};
+        if (rootPath) {
+            flatMap[rootPath] = fixtureMap;
+        }
+        for (const path of Object.keys(fixtureMap).sort()) {
+            if (typeof fixtureMap[path] !== 'object') {
+                flatMap[`${rootPath}${path}`] = fixtureMap[path];
+            }
+            else {
+                flatMap = Object.assign({}, flatMap, fattenFixtures(fixtureMap[path], `${rootPath}${path}/`));
+            }
+        }
+        return flatMap;
+    };
+    const mockFs = (fixture) => {
+        jest.spyOn(fs, 'readdir').mockRestore();
+        jest.spyOn(fs, 'stat').mockRestore();
+        jest.spyOn(fs, 'readFile').mockRestore();
+        const pathsMap = fattenFixtures(fixture);
+        jest.spyOn(fs, 'readdir').mockImplementation((readdirPath, readdirCb) => {
+            if (!pathsMap[`${readdirPath}/`]) {
+                return readdirCb(new Error(`ENOENT, no such file or directory '${readdirPath}'`), null);
+            }
+            jest.spyOn(fs, 'stat').mockImplementation((statPath, statCb) => {
+                if (!pathsMap[statPath] && !pathsMap[`${statPath}/`]) {
+                    return statCb(new Error(`ENOENT, no such file or directory, stat '${statPath}'`), null);
+                }
+                statCb(null, {
+                    isDirectory: () => typeof pathsMap[`${statPath}/`] === 'object',
+                    isFile: () => typeof pathsMap[statPath] === 'string',
+                });
             });
-        };
-        traverseDir(dir, resolve);
+            jest.spyOn(fs, 'readFile').mockImplementation(((readFilePath, encoding, readFileCb) => {
+                if (!pathsMap[readFilePath]) {
+                    return readFileCb(new Error(`ENOENT, no such file or directory '${readFilePath}'`), null);
+                }
+                readFileCb(null, pathsMap[readFilePath]);
+            }));
+            readdirCb(null, Object.keys(pathsMap[`${readdirPath}/`]).sort());
+        });
+    };
+    exports.mockFs = mockFs;
+});
+define("src/readfiles.spec", ["require", "exports", "src/index", "test/fixtures", "test/fs-helper", "src/consts"], function (require, exports, index_1, fixtures_1, fs_helper_1, consts_3) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    describe('readfiles', () => {
+        describe('defaults', () => {
+            let clock;
+            beforeEach(() => {
+                jest.useFakeTimers();
+                (0, fs_helper_1.mockFs)(fixtures_1.flatPathFixture);
+            });
+            it('should return the list of files and their contents', done => {
+                const files = ['abc.txt', 'def.dat', 'test123.txt', 'test456.dat'];
+                const contents = ['ABC', 'DEF', '123', '456'];
+                (0, index_1.default)('/path/to/dir', (err, filename, content) => {
+                    expect(filename).toEqual(files.shift());
+                    expect(content).toEqual(contents.shift());
+                    if (files.length === 0)
+                        done();
+                }).catch(err => {
+                    done(err);
+                });
+            });
+            it('should throw an error on a file', done => {
+                (0, fs_helper_1.mockFs)({
+                    '/path/to/dir': {
+                        'badfile.txt': false,
+                    },
+                });
+                (0, index_1.default)('/path/to/dir', (err, filename, content) => {
+                    expect(content).toBeNull();
+                    expect(err.message).toEqual("ENOENT, no such file or directory, stat '/path/to/dir/badfile.txt'");
+                }).catch(err => {
+                    expect(err.message).toEqual("ENOENT, no such file or directory, stat '/path/to/dir/badfile.txt'");
+                    done();
+                });
+            });
+            it('should resolve the promise when finished traversing all files', done => {
+                (0, index_1.default)('/path/to/dir')
+                    .then(files => {
+                    expect(files).toHaveLength(4);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it('should call the done callback with an error on a path', function (done) {
+                (0, fs_helper_1.mockFs)({});
+                (0, index_1.default)('/fake/invalid/dir').catch(function (err) {
+                    expect(err.message).toEqual("ENOENT, no such file or directory '/fake/invalid/dir'");
+                    done();
+                });
+            });
+            it('should wait for an asynchronous callback when returning a function', function (done) {
+                let count = 0;
+                const expectFiles = ['abc.txt', 'def.dat', 'test123.txt', 'test456.dat'];
+                (0, index_1.default)('/path/to/dir', function (err, filename) {
+                    return function (next) {
+                        expect(filename).toEqual(expectFiles[count++]);
+                        setTimeout(function () {
+                            next();
+                        }, 1000);
+                        jest.advanceTimersToNextTimer();
+                    };
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+        });
+        describe('options', () => {
+            beforeEach(() => {
+                (0, fs_helper_1.mockFs)(fixtures_1.deepPathFixture);
+            });
+            it("callback returns the list of files in reverse order when 'reverse' is true", done => {
+                (0, index_1.default)('/path/to/dir', { reverse: true })
+                    .then(files => {
+                    expect(files).toEqual([
+                        'subdir/test789.txt',
+                        'subdir/test456.dat',
+                        'subdir/test123.txt',
+                        'subdir/subsubdir/def456.dat',
+                        'subdir/subsubdir/abc123.dat',
+                        'subdir/abc123.txt',
+                        'otherdir/test789.txt',
+                        'otherdir/test123.txt',
+                        'otherdir/subsubdir/def456.txt',
+                        'otherdir/subsubdir/abc123.txt',
+                        'def.dat',
+                        'abc123.txt',
+                        'abc.txt',
+                    ]);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns the full path of the files when 'filenameFormat' is 'readfiles.FULL_PATH'", done => {
+                let count = 0;
+                const expectFiles = [
+                    '/path/to/dir/abc.txt',
+                    '/path/to/dir/abc123.txt',
+                    '/path/to/dir/def.dat',
+                    '/path/to/dir/otherdir/subsubdir/abc123.txt',
+                    '/path/to/dir/otherdir/subsubdir/def456.txt',
+                    '/path/to/dir/otherdir/test123.txt',
+                    '/path/to/dir/otherdir/test789.txt',
+                    '/path/to/dir/subdir/abc123.txt',
+                    '/path/to/dir/subdir/subsubdir/abc123.dat',
+                    '/path/to/dir/subdir/subsubdir/def456.dat',
+                    '/path/to/dir/subdir/test123.txt',
+                    '/path/to/dir/subdir/test456.dat',
+                    '/path/to/dir/subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', { filenameFormat: consts_3.FilenameFormat.FULL_PATH }, (err, filename) => {
+                    expect(filename).toEqual(expectFiles[count++]);
+                })
+                    .then(files => {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("callback returns the relative path of the files when 'filenameFormat' is 'readfiles.RELATIVE'", done => {
+                const count = 0;
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'def.dat',
+                    'otherdir/subsubdir/abc123.txt',
+                    'otherdir/subsubdir/def456.txt',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/abc123.txt',
+                    'subdir/subsubdir/abc123.dat',
+                    'subdir/subsubdir/def456.dat',
+                    'subdir/test123.txt',
+                    'subdir/test456.dat',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', { filenameFormat: consts_3.FilenameFormat.RELATIVE }, (err, filename) => {
+                    expect(expectFiles).toContain(filename);
+                })
+                    .then(files => {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("callback returns only the filename of the file when 'filenameFormat' is 'readfiles.FILENAME'", done => {
+                const count = 0;
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'def.dat',
+                    'abc123.txt',
+                    'def456.txt',
+                    'test123.txt',
+                    'test789.txt',
+                    'abc123.txt',
+                    'abc123.dat',
+                    'def456.dat',
+                    'test123.txt',
+                    'test456.dat',
+                    'test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', { filenameFormat: consts_3.FilenameFormat.FILENAME }, (err, filename) => {
+                    expect(expectFiles).toContain(filename);
+                })
+                    .then(files => {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("does not stop reading files when one file throws an error and 'rejectOnError' is false", done => {
+                let fileCount = 0;
+                (0, fs_helper_1.mockFs)(fixtures_1.badDeepPathFixture);
+                (0, index_1.default)('/path/to/dir', { rejectOnError: false }, err => {
+                    fileCount++;
+                })
+                    .then(files => {
+                    expect(fileCount).toEqual(15);
+                    expect(files.length).toEqual(13);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("callback does not return the file contents when 'readContents' is false", done => {
+                let fileCount = 0;
+                (0, index_1.default)('/path/to/dir', { readContents: false }, (err, filename, contents) => {
+                    expect(contents).toBeNull();
+                    fileCount++;
+                })
+                    .then(files => {
+                    expect(fileCount).toEqual(13);
+                    expect(files.length).toEqual(13);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("callback returns file contents encoded in the specified 'encoding' type", done => {
+                const expectFiles = {
+                    'abc.txt': 'ABC',
+                    'abc123.txt': 'ABC123',
+                    'def.dat': 'DEF',
+                    'otherdir/subsubdir/abc123.txt': 'ABC123',
+                    'otherdir/subsubdir/def456.txt': '456',
+                    'otherdir/symlink.dat': '123',
+                    'otherdir/test123.txt': '123',
+                    'otherdir/test789.txt': '789',
+                    'subdir/abc123.txt': 'ABC123',
+                    'subdir/subsubdir/abc123.dat': 'ABC123',
+                    'subdir/subsubdir/def456.dat': '456',
+                    'subdir/test123.txt': '123',
+                    'subdir/test456.dat': '456',
+                    'subdir/test789.txt': '789',
+                };
+                (0, index_1.default)('/path/to/dir', { encoding: null }, (err, filename, contents) => {
+                    expect(contents).toEqual(expectFiles[filename]);
+                })
+                    .then(files => {
+                    expect(files.length).toEqual(13);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("traverses the directory tree limiting to specified 'depth'", done => {
+                let count = 0;
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'def.dat',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/abc123.txt',
+                    'subdir/test123.txt',
+                    'subdir/test456.dat',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', { depth: 1 }, (err, filename) => {
+                    expect(filename).toEqual(expectFiles[count++]);
+                })
+                    .then(files => {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+            it("callback returns all files including hidden files when 'hidden' is true", done => {
+                let count = 0;
+                const expectFiles = [
+                    '.system',
+                    'abc.txt',
+                    'abc123.txt',
+                    'def.dat',
+                    'otherdir/.other',
+                    'otherdir/subsubdir/.hidden',
+                    'otherdir/subsubdir/abc123.txt',
+                    'otherdir/subsubdir/def456.txt',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/.dot',
+                    'subdir/abc123.txt',
+                    'subdir/subsubdir/.hidden',
+                    'subdir/subsubdir/abc123.dat',
+                    'subdir/subsubdir/def456.dat',
+                    'subdir/test123.txt',
+                    'subdir/test456.dat',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', { hidden: true }, (err, filename) => {
+                    expect(filename).toEqual(expectFiles[count++]);
+                })
+                    .then(files => {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(err => {
+                    done(err);
+                });
+            });
+        });
+        describe('filters', function () {
+            it("callback returns all files in the given directory when the 'filter' option is equal  '*'", function (done) {
+                const expectFiles = ['abc.txt', 'abc123.txt', 'def.dat'];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '*',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files in the given directory recursively when the 'filter' option is equal '**'", function (done) {
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'def.dat',
+                    'otherdir/subsubdir/abc123.txt',
+                    'otherdir/subsubdir/def456.txt',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/abc123.txt',
+                    'subdir/subsubdir/abc123.dat',
+                    'subdir/subsubdir/def456.dat',
+                    'subdir/test123.txt',
+                    'subdir/test456.dat',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '**',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all \"txt\" files in the given directory when the 'filter' option is equal '*.txt'", function (done) {
+                const expectFiles = ['abc.txt', 'abc123.txt'];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '*.txt',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all \"txt\" files in the given directory recursively when the 'filter' option is equal '**/*.txt'", function (done) {
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'otherdir/subsubdir/abc123.txt',
+                    'otherdir/subsubdir/def456.txt',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/abc123.txt',
+                    'subdir/test123.txt',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '**/*.txt',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files that match \"abc.txt\" in the given directory recursively when the 'filter' option is equal '**/abc123.txt'", function (done) {
+                const expectFiles = ['abc123.txt', 'otherdir/subsubdir/abc123.txt', 'subdir/abc123.txt'];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '**/abc123.txt',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files that match \"abc123.txt\" in the given directory when the 'filter' option is equal 'abc123.txt'", function (done) {
+                const expectFiles = ['abc123.txt'];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: 'abc123.txt',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files in all sub-directory of the given directory when the 'filter' option is equal '*/*'", function (done) {
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'def.dat',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/abc123.txt',
+                    'subdir/test123.txt',
+                    'subdir/test456.dat',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '*/*',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files where the extension matches \"t?t\" in the given directory when the 'filter' option is equal '*.??t'", function (done) {
+                const expectFiles = ['abc.txt', 'abc123.txt'];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '*.t?t',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files where the extension matches \"t?t\" in the given directory recursively when the 'filter' option is equal '**/*.??t'", function (done) {
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'otherdir/subsubdir/abc123.txt',
+                    'otherdir/subsubdir/def456.txt',
+                    'otherdir/test123.txt',
+                    'otherdir/test789.txt',
+                    'subdir/abc123.txt',
+                    'subdir/test123.txt',
+                    'subdir/test789.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: '**/*.t??',
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+            it("callback returns all files that match the array of filters in the given directory when the 'filter' option is equal ['*123*', 'abc.*'] ", function (done) {
+                const expectFiles = [
+                    'abc.txt',
+                    'abc123.txt',
+                    'otherdir/subsubdir/abc123.txt',
+                    'otherdir/test123.txt',
+                    'subdir/abc123.txt',
+                    'subdir/subsubdir/abc123.dat',
+                    'subdir/test123.txt',
+                ];
+                (0, index_1.default)('/path/to/dir', {
+                    filter: ['**/*123*', '**/abc.*'],
+                })
+                    .then(function (files) {
+                    expect(files).toEqual(expectFiles);
+                    done();
+                })
+                    .catch(function (err) {
+                    done(err);
+                });
+            });
+        });
     });
-}
-
+});
+//# sourceMappingURL=readfiles.js.map
 
 /***/ }),
 
@@ -43157,7 +43782,7 @@ function isKeyOperator(operator) {
 function getValues(context, operator, key, modifier) {
   var value = context[key], result = [];
   if (isDefined(value) && value !== "") {
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    if (typeof value === "string" || typeof value === "number" || typeof value === "bigint" || typeof value === "boolean") {
       value = value.toString();
       if (modifier && modifier !== "*") {
         value = value.substring(0, parseInt(modifier, 10));
@@ -43346,6 +43971,147 @@ var endpoint = withDefaults(null, DEFAULTS);
 
 // EXTERNAL MODULE: ./node_modules/fast-content-type-parse/index.js
 var fast_content_type_parse = __nccwpck_require__(1120);
+;// CONCATENATED MODULE: ./node_modules/json-with-bigint/json-with-bigint.js
+const noiseValue = /^-?\d+n+$/; // Noise - strings that match the custom format before being converted to it
+const originalStringify = JSON.stringify;
+const originalParse = JSON.parse;
+
+/*
+  Function to serialize value to a JSON string.
+  Converts BigInt values to a custom format (strings with digits and "n" at the end) and then converts them to proper big integers in a JSON string.
+*/
+const JSONStringify = (value, replacer, space) => {
+  if ("rawJSON" in JSON) {
+    return originalStringify(
+      value,
+      (key, value) => {
+        if (typeof value === "bigint") return JSON.rawJSON(value.toString());
+
+        if (typeof replacer === "function") return replacer(key, value);
+
+        if (Array.isArray(replacer) && replacer.includes(key)) return value;
+
+        return value;
+      },
+      space
+    );
+  }
+
+  if (!value) return originalStringify(value, replacer, space);
+
+  const bigInts = /([\[:])?"(-?\d+)n"($|([\\n]|\s)*(\s|[\\n])*[,\}\]])/g;
+  const noise = /([\[:])?("-?\d+n+)n("$|"([\\n]|\s)*(\s|[\\n])*[,\}\]])/g;
+  const convertedToCustomJSON = originalStringify(
+    value,
+    (key, value) => {
+      const isNoise =
+        typeof value === "string" && Boolean(value.match(noiseValue));
+
+      if (isNoise) return value.toString() + "n"; // Mark noise values with additional "n" to offset the deletion of one "n" during the processing
+
+      if (typeof value === "bigint") return value.toString() + "n";
+
+      if (typeof replacer === "function") return replacer(key, value);
+
+      if (Array.isArray(replacer) && replacer.includes(key)) return value;
+
+      return value;
+    },
+    space
+  );
+  const processedJSON = convertedToCustomJSON.replace(bigInts, "$1$2$3"); // Delete one "n" off the end of every BigInt value
+  const denoisedJSON = processedJSON.replace(noise, "$1$2$3"); // Remove one "n" off the end of every noisy string
+
+  return denoisedJSON;
+};
+
+/*
+  Function to check if the JSON.parse's context.source feature is supported.
+*/
+const isContextSourceSupported = () =>
+  JSON.parse("1", (_, __, context) => !!context && context.source === "1");
+
+/*
+  Faster (2x) and simpler function to parse JSON.
+  Based on JSON.parse's context.source feature, which is not universally available now.
+  Does not support the legacy custom format, used in the first version of this library.
+*/
+const JSONParseV2 = (text, reviver) => {
+  const intRegex = /^-?\d+$/;
+
+  return JSON.parse(text, (key, value, context) => {
+    const isBigNumber =
+      typeof value === "number" &&
+      (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER);
+    const isInt = intRegex.test(context.source);
+    const isBigInt = isBigNumber && isInt;
+
+    if (isBigInt) return BigInt(context.source);
+
+    if (typeof reviver !== "function") return value;
+
+    return reviver(key, value, context);
+  });
+};
+
+/*
+  Function to parse JSON.
+  If JSON has number values greater than Number.MAX_SAFE_INTEGER, we convert those values to a custom format, then parse them to BigInt values.
+  Other types of values are not affected and parsed as native JSON.parse() would parse them.
+*/
+const JSONParse = (text, reviver) => {
+  if (!text) return originalParse(text, reviver);
+
+  if (isContextSourceSupported()) return JSONParseV2(text, reviver); // Shortcut to a faster (2x) and simpler version
+
+  const MAX_INT = Number.MAX_SAFE_INTEGER.toString();
+  const MAX_DIGITS = MAX_INT.length;
+  const stringsOrLargeNumbers =
+    /"(?:\\.|[^"])*"|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/g;
+  const noiseValueWithQuotes = /^"-?\d+n+"$/; // Noise - strings that match the custom format before being converted to it
+  const customFormat = /^-?\d+n$/;
+
+  // Find and mark big numbers with "n"
+  const serializedData = text.replace(
+    stringsOrLargeNumbers,
+    (text, digits, fractional, exponential) => {
+      const isString = text[0] === '"';
+      const isNoise = isString && Boolean(text.match(noiseValueWithQuotes));
+
+      if (isNoise) return text.substring(0, text.length - 1) + 'n"'; // Mark noise values with additional "n" to offset the deletion of one "n" during the processing
+
+      const isFractionalOrExponential = fractional || exponential;
+      const isLessThanMaxSafeInt =
+        digits &&
+        (digits.length < MAX_DIGITS ||
+          (digits.length === MAX_DIGITS && digits <= MAX_INT)); // With a fixed number of digits, we can correctly use lexicographical comparison to do a numeric comparison
+
+      if (isString || isFractionalOrExponential || isLessThanMaxSafeInt)
+        return text;
+
+      return '"' + text + 'n"';
+    }
+  );
+
+  // Convert marked big numbers to BigInt
+  return originalParse(serializedData, (key, value, context) => {
+    const isCustomFormatBigInt =
+      typeof value === "string" && Boolean(value.match(customFormat));
+
+    if (isCustomFormatBigInt)
+      return BigInt(value.substring(0, value.length - 1));
+
+    const isNoiseValue =
+      typeof value === "string" && Boolean(value.match(noiseValue));
+
+    if (isNoiseValue) return value.substring(0, value.length - 1); // Remove one "n" off the end of the noisy string
+
+    if (typeof reviver !== "function") return value;
+
+    return reviver(key, value, context);
+  });
+};
+
 ;// CONCATENATED MODULE: ./node_modules/@octokit/request-error/dist-src/index.js
 class RequestError extends Error {
   name;
@@ -43395,7 +44161,7 @@ class RequestError extends Error {
 
 
 // pkg/dist-src/version.js
-var dist_bundle_VERSION = "10.0.7";
+var dist_bundle_VERSION = "10.0.8";
 
 // pkg/dist-src/defaults.js
 var defaults_default = {
@@ -43405,6 +44171,7 @@ var defaults_default = {
 };
 
 // pkg/dist-src/fetch-wrapper.js
+
 
 
 // pkg/dist-src/is-plain-object.js
@@ -43429,7 +44196,7 @@ async function fetchWrapper(requestOptions) {
   }
   const log = requestOptions.request?.log || console;
   const parseSuccessResponseBody = requestOptions.request?.parseSuccessResponseBody !== false;
-  const body = dist_bundle_isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body) ? JSON.stringify(requestOptions.body) : requestOptions.body;
+  const body = dist_bundle_isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body) ? JSONStringify(requestOptions.body) : requestOptions.body;
   const requestHeaders = Object.fromEntries(
     Object.entries(requestOptions.headers).map(([name, value]) => [
       name,
@@ -43528,7 +44295,7 @@ async function getResponseData(response) {
     let text = "";
     try {
       text = await response.text();
-      return JSON.parse(text);
+      return JSONParse(text);
     } catch (err) {
       return text;
     }
@@ -43916,12 +44683,12 @@ class Octokit {
 }
 
 
-;// CONCATENATED MODULE: ./node_modules/@actions/github/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
+;// CONCATENATED MODULE: ./node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
 const dist_src_version_VERSION = "17.0.0";
 
 //# sourceMappingURL=version.js.map
 
-;// CONCATENATED MODULE: ./node_modules/@actions/github/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
+;// CONCATENATED MODULE: ./node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
 const Endpoints = {
   actions: {
     addCustomLabelsToSelfHostedRunnerForOrg: [
@@ -46215,7 +46982,7 @@ var endpoints_default = Endpoints;
 
 //# sourceMappingURL=endpoints.js.map
 
-;// CONCATENATED MODULE: ./node_modules/@actions/github/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/endpoints-to-methods.js
+;// CONCATENATED MODULE: ./node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/endpoints-to-methods.js
 
 const endpointMethodsMap = /* @__PURE__ */ new Map();
 for (const [scope, endpoints] of Object.entries(endpoints_default)) {
@@ -46341,7 +47108,7 @@ function decorate(octokit, scope, methodName, defaults, decorations) {
 
 //# sourceMappingURL=endpoints-to-methods.js.map
 
-;// CONCATENATED MODULE: ./node_modules/@actions/github/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/index.js
+;// CONCATENATED MODULE: ./node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/index.js
 
 
 function restEndpointMethods(octokit) {
@@ -46362,7 +47129,7 @@ legacyRestEndpointMethods.VERSION = dist_src_version_VERSION;
 
 //# sourceMappingURL=index.js.map
 
-;// CONCATENATED MODULE: ./node_modules/@actions/github/node_modules/@octokit/plugin-paginate-rest/dist-bundle/index.js
+;// CONCATENATED MODULE: ./node_modules/@octokit/plugin-paginate-rest/dist-bundle/index.js
 // pkg/dist-src/version.js
 var plugin_paginate_rest_dist_bundle_VERSION = "0.0.0-development";
 
@@ -51218,7 +51985,7 @@ const copy = async (src, dest, isDirectory, file) => {
     if (isDirectory) {
       core.debug(`Render all files in directory ${src} to ${dest}`);
 
-      const srcFileList = await (0,readfiles/* readfiles */.m)(src, { readContents: false, hidden: true });
+      const srcFileList = await readfiles(src, { readContents: false, hidden: true });
       for (const srcFile of srcFileList) {
         if (!filterFunc(srcFile)) {
           continue;
@@ -51240,8 +52007,8 @@ const copy = async (src, dest, isDirectory, file) => {
 
   // If it is a directory and deleteOrphaned is enabled - check if there are any files that were removed from source dir and remove them in destination dir
   if (deleteOrphaned) {
-    const srcFileList = await (0,readfiles/* readfiles */.m)(src, { readContents: false, hidden: true });
-    const destFileList = await (0,readfiles/* readfiles */.m)(dest, { readContents: false, hidden: true });
+    const srcFileList = await readfiles(src, { readContents: false, hidden: true });
+    const destFileList = await readfiles(dest, { readContents: false, hidden: true });
 
     for (const destFile of destFileList) {
       if (srcFileList.indexOf(destFile) === -1) {
