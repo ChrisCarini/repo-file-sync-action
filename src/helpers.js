@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import readfiles from 'node-readfiles';
+import { readfiles } from 'node-readfiles';
 import { exec } from 'child_process';
 import * as core from '@actions/core';
 import path from 'path';
