@@ -10,7 +10,7 @@
     "format-check": "prettier --check '**/*.js'",
     "lint": "eslint src/**/*.js",
     "package": "ncc build src/index.js --out dist --source-map --license licenses.txt",
-    "test": "jest --passWithNoTests",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --passWithNoTests",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "engines": {

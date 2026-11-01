@@ -3,6 +3,7 @@ import fs from 'fs';
 
 import Git from './git.js';
 import { forEach, addTrailingSlash, pathIsDirectory, copy, remove, execCmd } from './helpers.js';
+import { writePullRequestSummary } from './summary.js';
 import {
   parseConfig,
   PR_LABELS,
@@ -36,13 +37,11 @@ async function syncAndAddFile(git, file, destRepo) {
   await git.add(file.dest);
 }
 
-async function run() {
+async function run(pullRequests) {
   // Reuse octokit for each repo
   const git = new Git();
 
   const repos = await parseConfig();
-
-  const prUrls = [];
 
   core.startGroup(`START - github.context.payload :`);
   core.debug(JSON.stringify(github.context.payload, null, 2));
@@ -207,6 +206,14 @@ async function run() {
 
       const pullRequest = await git.createOrUpdatePr(commitMessages);
 
+      pullRequests.push({
+        repository: `${item.repo.user}/${item.repo.name}`,
+        number: pullRequest.number,
+        title: pullRequest.title,
+        url: pullRequest.html_url,
+        status: existingPr ? 'Updated' : 'Created',
+      });
+
       if (PR_LABELS !== undefined && PR_LABELS.length > 0 && !FORK) {
         core.info(`Adding label(s) "${PR_LABELS.join(', ')}" to PR`);
         try {
@@ -258,7 +265,6 @@ async function run() {
       }
 
       core.notice(`Pull Request #${pullRequest.number} ${existingPr ? 'updated' : 'created'}: ${pullRequest.html_url}`);
-      prUrls.push(pullRequest.html_url);
 
       core.info(`Completed repo: ${item.repo.name}`);
     } catch (err) {
@@ -267,20 +273,23 @@ async function run() {
     }
   });
 
-  // If we created any PRs, set their URLs as the output
-  if (prUrls) {
-    core.setOutput('pull_request_urls', prUrls);
-  }
+  core.setOutput(
+    'pull_request_urls',
+    pullRequests.map((pullRequest) => pullRequest.url)
+  );
 
   core.debug(`Cleaning up ${TMP_DIR}`);
   await remove(TMP_DIR);
 }
 
 (async () => {
+  const pullRequests = [];
   try {
-    await run();
+    await run(pullRequests);
   } catch (err) {
     core.setFailed(err.message);
     core.debug(err);
+  } finally {
+    await writePullRequestSummary(pullRequests);
   }
 })();
