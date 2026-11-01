@@ -121,6 +121,12 @@ Here are all the inputs [repo-file-sync-action](https://github.com/ChrisCarini/r
 
 The action sets the `pull_request_urls` output to the URLs of any created Pull Requests. It will be an array of URLs to each PR, e.g. `'["https://github.com/username/repository/pull/number", "..."]'`.
 
+### Workflow summary
+
+After each run, the action adds a table to the GitHub Actions job summary listing the pull requests it created or updated. Each row includes the destination repository, a link to the PR, its title, and whether it was **Created** or **Updated**.
+
+If no PRs were created or updated, the summary says so explicitly. Successfully created or updated PRs are still listed if another repository fails to sync. No additional configuration is required, and the `pull_request_urls` output is unchanged.
+
 ## 🛠️ Sync Configuration
 
 In order to tell [repo-file-sync-action](https://github.com/ChrisCarini/repo-file-sync-action) what files to sync where, you have to create a `sync.yml` file in the `.github` directory of your main repository (see [action-inputs](#%EF%B8%8F-action-inputs) on how to change the location).
